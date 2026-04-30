@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Simulador de Costeo e Informes de Producción — herramienta interna de análisis de costos.">
+<meta name="theme-color" content="#5b5fc7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1c2e"  media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Costeo">
+<title>Simulador de Costeo &amp; Informes v95</title>
+<!-- Favicon SVG inline -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235b5fc7'/%3E%3Crect x='5' y='5' width='22' height='22' rx='3' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M5 13h22M13 27V13' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ═══ VARIANTE B — Clean Light Pro ═══ */
+:root, [data-theme="light"] {
+  --bg:    #f5f6fa;
+  --sur:   #ffffff;
+  --sur2:  #fafbfd;
+  --sur3:  #f0f1f7;
+  --bor:   #e2e5ef;
+  --div:   #eceef6;
+  --tx:    #1a1d2e;
+  --txm:   #6b7199;
+  --txf:   #b5b9ce;
+  --pri:   #5b5fc7;
+  --prih:  #4a4eb8;
+  --prihl: #f0f0fc;
+  --pril:  #c8c9f0;
+  --suc:   #17a35e;
+  --suchl: #e6f7ef;
+  --err:   #e53e5e;
+  --errhl: #fde8ed;
+  --war:   #e07b1a;
+  --warhl: #fff4e5;
+  --gold:  #d4700a;
+  --psp:   #7c3aed;
+  --psphl: #f3efff;
+  --sh0:   0 1px 2px rgba(26,29,46,.04);
+  --sh1:   0 2px 10px rgba(26,29,46,.07);
+  --sh2:   0 6px 24px rgba(26,29,46,.1);
+  --sh3:   0 16px 48px rgba(26,29,46,.13);
+  --r1:.2rem;--r2:.4rem;--r3:.65rem;--r4:1rem;--r5:1.5rem;
+  --fnt:"Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"Consolas","Fira Mono",monospace;
+}
+[data-theme="dark"] {
+  --bg:    #12131f;
+  --sur:   #1a1c2e;
+  --sur2:  #1e2035;
+  --sur3:  #23263e;
+  --bor:   #2e3254;
+  --div:   #252846;
+  --tx:    #e6e8f6;
+  --txm:   #7e85ae;
+  --txf:   #3d4268;
+  --pri:   #7b80e8;
+  --prih:  #9196ee;
+  --prihl: #1d1f3a;
+  --pril:  #2d3068;
+  --suc:   #2ecc8a;
+  --suchl: #0a3325;
+  --err:   #f07090;
+  --errhl: #3d0a1a;
+  --war:   #f5a742;
+  --warhl: #3d2000;
+  --gold:  #f5a742;
+  --psp:   #b09dff;
+  --psphl: #25184d;
+  --sh0:   0 1px 3px rgba(0,0,0,.35);
+  --sh1:   0 2px 10px rgba(0,0,0,.3);
+  --sh2:   0 6px 24px rgba(0,0,0,.45);
+  --sh3:   0 16px 48px rgba(0,0,0,.55);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--fnt);font-size:13px;color:var(--tx);background:var(--bg);min-height:100dvh;}
+input,button,select,textarea{font:inherit;color:inherit;}
+table{border-collapse:collapse;width:100%;}
+
+/* Header */
+.hdr{
+  background:var(--pri);
+  padding:.5rem 1.5rem;
+  display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 12px rgba(91,95,199,.35);
+}
+.hdr-title{
+  font-size:.95rem;font-weight:700;color:#fff;
+  display:flex;align-items:center;gap:.5rem;
+  letter-spacing:-.01em;
+}
+.hdr-title span{opacity:.85;font-weight:500;}
+.hdr .btn{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#fff;}
+.hdr .btn:hover{background:rgba(255,255,255,.25);}
+
+/* Tabs */
+.tabs{
+  background:var(--sur);
+  border-bottom:1px solid var(--div);
+  padding:0 1.5rem;
+  display:flex;
+  position:sticky;top:46px;z-index:150;
+  box-shadow:var(--sh0);
+}
+.tab-btn{
+  padding:.6rem 1rem;font-size:.78rem;font-weight:600;
+  color:var(--txm);background:transparent;border:none;
+  border-bottom:3px solid transparent;
+  cursor:pointer;white-space:nowrap;transition:all .15s;
+}
+.tab-btn:hover{color:var(--pri);}
+.tab-btn.active{color:var(--pri);border-bottom-color:var(--pri);background:var(--prihl);}
+.tab-pane{display:none;padding:.75rem 1rem 1.5rem;max-width:1400px;margin:0 auto;}
+.tab-pane.active{display:block;}
+
+/* Cards */
+.card{
+  background:var(--sur);
+  border-radius:var(--r4);
+  border:1px solid var(--bor);
+  box-shadow:var(--sh1);
+  margin-bottom:.65rem;overflow:hidden;
+  transition:box-shadow .2s;
+}
+.card:hover{box-shadow:var(--sh2);}
+.ch{
+  padding:.5rem .9rem;
+  border-bottom:1px solid var(--div);
+  background:var(--sur2);
+  display:flex;justify-content:space-between;align-items:center;
+  font-weight:700;font-size:.72rem;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--txm);
+}
+.cb{padding:.65rem .9rem;}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:.55rem;}
+.grid-6{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:.45rem;}
+
+/* Form */
+.fg{display:flex;flex-direction:column;gap:.2rem;}
+.flbl{font-size:.65rem;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;}
+.fi{
+  padding:.32rem .5rem;
+  border:1px solid var(--bor);border-radius:var(--r2);
+  background:var(--sur2);font-family:var(--mono);font-size:.8rem;
+  text-align:right;width:100%;transition:border-color .15s,box-shadow .15s;
+}
+.fi:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px var(--prihl);}
+.fi[readonly]{background:var(--sur3);color:var(--txm);cursor:default;}
+.fi-txt{text-align:left;font-family:var(--fnt);}
+.fhint{font-size:.63rem;color:var(--txf);}
+
+/* KPIs — Pills estilo métrica */
+.kpi{
+  background:var(--sur);border:1px solid var(--bor);
+  border-radius:var(--r3);padding:.6rem .85rem;
+  display:flex;flex-direction:column;gap:.12rem;
+  position:relative;overflow:hidden;
+}
+.kpi::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--bor);
+}
+.kpi.psp::before{background:var(--psp);}
+.kpi.ope::before{background:var(--pri);}
+.kpi.mat::before{background:var(--suc);}
+.kpi.feat.tot::before{background:linear-gradient(180deg,var(--pri),var(--psp));}
+.kpi-lbl{font-size:.63rem;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.07em;}
+.kpi-val{font-size:1.5rem;font-weight:800;font-family:var(--mono);letter-spacing:-.02em;line-height:1.1;}
+.kpi.psp .kpi-val{color:var(--psp);}
+.kpi.ope .kpi-val{color:var(--pri);}
+.kpi.mat .kpi-val{color:var(--suc);}
+.kpi.feat{background:linear-gradient(135deg,var(--pri) 0%,var(--psp) 100%);border:none;box-shadow:0 4px 16px rgba(91,95,199,.3);}
+.kpi.feat .kpi-lbl{color:rgba(255,255,255,.8);}
+.kpi.feat .kpi-val{color:#fff;}
+.kpi.feat::before{display:none;}
+
+/* Buttons */
+.btn{
+  padding:.33rem .7rem;border-radius:var(--r2);
+  font-size:.78rem;font-weight:600;cursor:pointer;
+  border:1px solid var(--bor);transition:all .15s;
+  display:inline-flex;align-items:center;gap:.35rem;
+  background:var(--sur);color:var(--tx);
+}
+.btn:hover{background:var(--sur3);border-color:var(--pri);color:var(--pri);}
+.btn-pri{background:var(--pri);color:#fff!important;border-color:var(--pri);box-shadow:0 2px 8px rgba(91,95,199,.3);}
+.btn-pri:hover{background:var(--prih);box-shadow:0 4px 14px rgba(91,95,199,.4);}
+.btn-suc{background:var(--suc);color:#fff!important;border-color:var(--suc);}
+.btn-suc:hover{background:#149e59;}
+.btn-err{background:var(--err);color:#fff!important;border-color:var(--err);}
+.btn-err:hover{background:#cc3353;}
+.btn-sm{padding:.18rem .45rem;font-size:.7rem;}
+.btn-del{background:transparent;border:none;color:var(--err);cursor:pointer;padding:2px 6px;border-radius:var(--r1);font-weight:bold;font-size:.85rem;}
+.btn-del:hover{background:var(--errhl);}
+
+/* Tarifa */
+.tarifa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:.5rem;}
+.t-item{border:1px solid var(--bor);border-radius:var(--r3);padding:.55rem .7rem;cursor:pointer;transition:all .15s;background:var(--sur);}
+.t-item:hover{border-color:var(--pri);background:var(--prihl);transform:translateY(-1px);}
+.t-item.sel{background:var(--prihl);border-color:var(--pri);box-shadow:0 0 0 2px var(--pril);}
+.t-hdr{display:flex;justify-content:space-between;font-weight:700;font-size:.76rem;margin-bottom:.18rem;}
+.t-val{font-family:var(--mono);color:var(--pri);font-weight:800;font-size:.95rem;}
+
+/* Tables */
+.dt th{padding:.38rem .55rem;text-align:right;border-bottom:2px solid var(--bor);background:var(--sur3);font-size:.65rem;color:var(--txm);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.dt th:first-child{text-align:left;}
+.dt td{padding:.35rem .55rem;text-align:right;border-bottom:1px solid var(--div);font-family:var(--mono);font-size:.77rem;}
+.dt td:first-child{text-align:left;font-family:var(--fnt);font-size:.78rem;}
+.dt tr:hover td{background:var(--prihl);}
+.dt tr.tot{background:var(--sur3);font-weight:700;}
+.dt tr.tot td{border-top:2px solid var(--bor);}
+.dt input{width:100%;border:1px solid transparent;background:transparent;text-align:right;font-family:inherit;font-size:inherit;padding:2px 4px;border-radius:var(--r1);}
+.dt input:focus{background:var(--sur);border-color:var(--pri);outline:none;box-shadow:0 0 0 2px var(--prihl);}
+.dt input.txt{text-align:left;font-family:var(--fnt);}
+.h-tbl{width:100%;border-collapse:collapse;}
+.h-tbl th{padding:.38rem .5rem;font-size:.65rem;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--bor);background:var(--sur3);text-align:left;white-space:nowrap;}
+.h-tbl td{padding:.35rem .5rem;font-size:.77rem;border-bottom:1px solid var(--div);vertical-align:middle;white-space:nowrap;}
+.h-tbl tr:hover td{background:var(--prihl);}
+
+/* Drop */
+.drop-zone{border:2px dashed var(--bor);border-radius:var(--r4);padding:1.5rem;text-align:center;background:var(--sur2);transition:all .2s;color:var(--txm);}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--pri);background:var(--prihl);color:var(--pri);}
+
+/* Toast */
+#toast{position:fixed;bottom:1.25rem;right:1.25rem;background:var(--suc);color:#fff;padding:.55rem 1.1rem;border-radius:var(--r3);font-weight:700;font-size:.8rem;opacity:0;transition:opacity .3s;z-index:9999;pointer-events:none;box-shadow:var(--sh2);display:flex;align-items:center;gap:.5rem;}
+#fab-guardar{position:fixed;bottom:1.25rem;right:1.25rem;z-index:1000;}
+#fab-guardar .btn{padding:.55rem 1.1rem;border-radius:2rem;font-size:.8rem;font-weight:700;box-shadow:var(--sh3);}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bor);border-radius:10px;}
+::-webkit-scrollbar-thumb:hover{background:var(--txm);}
+
+@media print{body *{visibility:hidden;}#informe-print{display:block!important;visibility:visible!important;position:absolute;left:0;top:0;width:100%;background:#fff;}#informe-print *{visibility:visible!important;}.no-print,.hdr,.tabs,.tab-pane{display:none!important;}}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+input[inputmode="decimal"]{-moz-appearance:textfield;}
+input[inputmode="decimal"]::-webkit-outer-spin-button,input[inputmode="decimal"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:1.1rem;height:1.1rem;padding:0 .3rem;background:var(--err);color:white;border-radius:1rem;font-size:.63rem;font-weight:700;line-height:1;vertical-align:middle;margin-left:.2rem;}
+.info-row{display:flex;gap:.5rem;flex-wrap:wrap;padding:.45rem 0;border-bottom:1px solid var(--div);}
+.info-row:last-child{border-bottom:none;}
+.info-chip{display:inline-flex;align-items:center;gap:.3rem;background:var(--sur3);border:1px solid var(--bor);border-radius:var(--r2);padding:.18rem .5rem;font-size:.7rem;font-weight:600;color:var(--txm);}
+.info-chip b{color:var(--tx);font-family:var(--mono);}
+.tr-tot{background:var(--sur3);font-weight:700;}
+.tr-tot td{border-top:1px solid var(--bor);}
+
+/* ═══ RESPONSIVE WEB ═══ */
+
+/* Scroll horizontal en tablas en pantallas pequeñas */
+.tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Móvil < 640px */
+@media (max-width: 640px) {
+  .hdr { padding: .45rem 1rem; }
+  .hdr-title { font-size: .85rem; }
+  .tabs { padding: 0 .5rem; overflow-x: auto; gap: 0; }
+  .tab-btn { padding: .55rem .7rem; font-size: .73rem; }
+  .tab-pane { padding: .6rem .6rem 1.5rem; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); gap: .4rem; }
+  .grid-6 { grid-template-columns: repeat(2, 1fr); gap: .4rem; }
+  .kpi-val { font-size: 1.25rem; }
+  .card { margin-bottom: .5rem; }
+  .cb { padding: .5rem .6rem; }
+  .ch { padding: .45rem .6rem; font-size: .68rem; }
+  .tarifa-grid { grid-template-columns: 1fr 1fr; }
+  #fab-guardar .btn { padding: .5rem .9rem; font-size: .75rem; }
+}
+
+/* Tablet 641–1024px */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-6 { grid-template-columns: repeat(3, 1fr); }
+  .tab-pane { padding: .75rem .8rem 1.5rem; }
+}
+
+/* Pantallas grandes >= 1280px */
+@media (min-width: 1280px) {
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-6 { grid-template-columns: repeat(6, 1fr); }
+  .tab-pane { padding: .75rem 1.5rem 2rem; }
+}
+
+/* Safe area iOS */
+.hdr { padding-left: max(1.5rem, env(safe-area-inset-left)); padding-right: max(1.5rem, env(safe-area-inset-right)); }
+#fab-guardar { bottom: max(1.25rem, env(safe-area-inset-bottom)); right: max(1.25rem, env(safe-area-inset-right)); }
+#toast { bottom: max(1.25rem, env(safe-area-inset-bottom)); right: max(1.25rem, env(safe-area-inset-right)); }
+
+</style>
+</head>
+<body>
+
+<header class="hdr no-print">
+  <div class="hdr-title">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    Simulador de Costeo &amp; <span>Informes v95</span>
+  </div>
+  <button class="btn" onclick="toggleTheme()" aria-label="Cambiar tema">🌓 Tema</button>
+</header>
+
+<nav class="tabs no-print">
+  <button class="tab-btn active" onclick="switchTab('costeo', this)">📊 Simulador de Costeo</button>
+  <button class="tab-btn" onclick="switchTab('tarifas', this)">💰 Carga de Tarifas (Excel)</button>
+  <button class="tab-btn" onclick="switchTab('psp', this)">📦 PSP Valorizado (Excel)</button>
+  <button class="tab-btn" onclick="abrirHistorial(this)">&#128203; Historial <span id="badge-historial" style="background:var(--pri);color:#fff;border-radius:999px;padding:0 6px;font-size:.7rem;margin-left:4px;display:none">0</span></button>
+</nav>
+
+<div id="tab-costeo" class="tab-pane active no-print">
+  <div style="display:flex; flex-direction:column; gap:1rem;">
+<div class="card" style="background: linear-gradient(to right, var(--prihl), var(--sur)); border-left: 4px solid var(--pri);">
+    <div class="cb" style="display: flex; gap: 1rem; align-items: center; padding: .75rem 1rem; flex-wrap: wrap;">
+      <strong style="color: var(--pri);">Centro Productivo Activo:</strong>
+      <select id="centro-activo" class="fi fi-txt" style="min-width: 200px; max-width: 300px; font-weight: bold;" onchange="syncCentro(this.value)">
+        <option value="">-- Todos / Sin Centro --</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid-6" style="margin-bottom: 1rem;">
+    <div class="kpi feat tot">
+      <div class="kpi-lbl">Costo Total (USD/kg)</div>
+      <div class="kpi-val" id="kpi-ct">0.00</div>
+    </div>
+    <div class="kpi psp">
+      <div class="kpi-lbl">PSP (USD/kg)</div>
+      <div class="kpi-val" id="kpi-psp" style="color: var(--psp)">0.00</div>
+    </div>
+    <div class="kpi ope">
+      <div class="kpi-lbl">Operacional (USD/kg)</div>
+      <div class="kpi-val" id="kpi-ope" style="color: var(--pri)">0.00</div>
+    </div>
+    <div class="kpi mat">
+      <div class="kpi-lbl">Material (USD/kg)</div>
+      <div class="kpi-val" id="kpi-mat" style="color: var(--suc)">0.00</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">HH Total</div>
+      <div class="kpi-val" id="kpi-hh">0</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Consumo (kg)</div>
+      <div class="kpi-val" id="kpi-consumo">0</div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--pri);background:var(--sur2);">
+    <div class="ch" style="font-size:0.9rem;">📝 Descripción del Costeo <span style="font-weight:400;color:var(--txm);font-size:0.8rem;">(subtítulo en el informe impreso)</span></div>
+    <div class="cb">
+      <textarea id="in-descripcion" class="fi" rows="2" placeholder="Ej: Costeo proceso IQF camarón USDA &gt;12 – Turno mañana..." style="resize:vertical;font-size:0.9rem;width:100%;padding:0.5rem;"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">⚙️ Producción y Cálculo HH</div>
+    <div class="cb grid-4">
+      <div class="fg"><label class="flbl">N° Orden</label><input type="text" class="fi fi-txt" id="in-orden" value="800008569"></div>
+      <div class="fg"><label class="flbl">Personas</label><input type="text" inputmode="decimal" class="fi" id="in-personas" value="22" oninput="calcProduccion()" autocomplete="off"></div>
+      <div class="fg"><label class="flbl">Horas</label><input type="text" inputmode="decimal" class="fi" id="in-horas" value="9" oninput="calcProduccion()" autocomplete="off"></div>
+      <div class="fg"><label class="flbl">HH Resultado</label><input type="text" class="fi" id="in-hh" readonly style="background: var(--sur3); font-weight: bold;"></div>
+
+      <div class="fg"><label class="flbl">Consumo Total (kg)</label><input type="text" class="fi" id="in-consumo" readonly style="background:var(--sur3);font-weight:bold"></div>
+      <div class="fg"><label class="flbl">Alta Producida (kg)</label><input type="text" class="fi" id="in-alta" readonly style="background:var(--sur3);font-weight:bold"></div>
+
+      <div class="fg">
+        <label class="flbl">Kg / Hora</label>
+        <input type="text" inputmode="decimal" class="fi" id="in-kgh" placeholder="Ej: 1.200" oninput="calcProduccion()" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="flbl">Rendimiento Masa (%)</label>
+        <input type="text" class="fi" id="in-iqf" placeholder="Auto desde distribución" readonly style="background:var(--sur3);font-weight:bold">
+      </div>
+
+      <div class="fg"><label class="flbl">Tarifas Seleccionadas</label><input type="text" class="fi" id="in-suma-tarifas-base" readonly style="background: var(--sur2); color: var(--tx);"></div>
+      <div class="fg"><label class="flbl">Total CLP</label><input type="text" class="fi" id="in-total-clp" readonly style="background: var(--sur3); font-weight: bold; color: var(--suc);"></div>
+      <div class="fg"><label class="flbl">Tipo de Cambio</label><input type="text" inputmode="decimal" class="fi" id="in-tc" value="1" oninput="calcProduccion()" autocomplete="off"></div>
+      <div class="fg"><label class="flbl">Otro Ingreso (Sumado a Tarifa)</label><input type="text" inputmode="decimal" class="fi" id="in-otros" value="0" oninput="calcProduccion()" autocomplete="off"></div>
+      <div class="fg"><label class="flbl">Suma Tarifa Final</label><input type="text" class="fi" id="in-suma-tarifas" readonly style="background: var(--sur3); font-weight: bold; color: var(--pri);"></div>
+      
+    </div>
+  </div>
+
+  
+  <!-- TABLA DE RENDIMIENTO IQF -->
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-tit" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <div><span class="icon">📊</span> Rendimiento Masa (%)</div>
+        <button class="btn" style="padding:4px 8px; font-size:0.8rem;" onclick="addCal()">+ Añadir Calidad</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+          <tr>
+            <th style="padding: 0.5rem; color:var(--txm); font-size:0.85rem;">CALIDAD</th>
+            <th style="padding: 0.5rem; text-align: center; color:var(--txm); font-size:0.85rem;">% Rend. Masa</th>
+            <th style="padding: 0.5rem; text-align: right; color:var(--txm); font-size:0.85rem;">Cantidad (kg)</th>
+            <th style="padding: 0.5rem; text-align: center; color:var(--gold,#d19900); font-size:0.85rem;">CIF (USD/kg)</th>
+          </tr>
+        </thead>
+        <tbody id="tb-dist-pct">
+        </tbody>
+        <tfoot>
+          <tr class="tr-tot">
+            <td style="padding: 0.5rem;">TOTAL</td>
+            <td id="tot-pct-rend" style="padding: 0.5rem; text-align: center; color: var(--pri);">0%</td>
+            <td id="tot-kg-rend" style="padding: 0.5rem; text-align: right; color: var(--suc);">0</td>
+            <td style="padding: 0.5rem;"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="card">
+    <div class="ch">
+      <div>🏭 Tarifas Operacionales</div>
+      <div style="font-size:.85rem; font-weight:normal; color:var(--txm);">Total Seleccionado: <span id="lbl-tarifa-sel" style="color:var(--pri); font-weight:bold; font-family:var(--mono);">0.00</span></div>
+    </div>
+    <div class="cb" id="tarifa-selector-container">
+      <div style="color:var(--txm);font-size:.85rem;">Ve a "Carga de Tarifas" para importar Excel/TXT.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <div>📦 Empaques / Materiales</div>
+      <button class="btn btn-sm" onclick="addEmp()">+ Agregar</button>
+    </div>
+    <div class="cb" style="padding: 0; overflow-x: auto;">
+      <div class="tbl-wrap"><table class="dt">
+        <thead><tr><th>Código</th><th>Descripción</th><th>Consumo (un)</th><th>USD$/UN</th><th>Sub Total (USD)</th><th></th></tr></thead>
+        <tbody id="tb-emp"></tbody>
+        <tfoot><tr class="tot"><td>TOTAL MATERIAL</td><td></td><td></td><td id="tot-emp-usd">0.00</td><td></td></tr></tfoot>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <div>🍎 PSP / Materia Prima</div>
+      <button class="btn btn-sm" onclick="addPsp()">+ Agregar</button>
+    </div>
+    <div class="cb" style="padding: 0; overflow-x: auto;">
+      <div class="tbl-wrap"><table class="dt">
+        <thead><tr><th>Código</th><th>Descripción</th><th style="text-align:center">% Dist.</th><th style="text-align:center">Cantidad (kg)</th><th style="text-align:center">USD$/kg</th><th>Sub Total (USD)</th><th></th></tr></thead>
+        <tbody id="tb-psp"></tbody>
+        <tfoot><tr class="tot"><td>TOTAL PSP</td><td></td><td id="tot-psp-kg">0</td><td></td><td id="tot-psp-usd">0.00</td><td></td></tr></tfoot>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <div>⚖️ Distribución de Equivalencias</div>
+      <div style="display:flex; gap:1rem; align-items:center;">
+        <button class="btn btn-sm" onclick="addCal()">+ Calidad</button>
+      </div>
+    </div>
+    <div class="cb" style="padding: 0; overflow-x: auto;">
+      <div style="padding: 10px 15px; background: var(--sur2); border-bottom: 1px solid var(--div); font-family: var(--mono); font-size: 0.9em;">
+        <strong>Consumo:</strong> <span id="lbl-consumo">11.000</span> | 
+        <strong>Valor PSP:</strong> <span id="lbl-psp" style="color: var(--err); font-weight: bold;">2,36</span> | 
+        <strong>Total Ref:</strong> <span id="lbl-ref">25.960</span>
+      </div>
+      <div class="tbl-wrap"><table class="dt">
+        <thead><tr>
+          <th>CALIDAD</th>
+          <th>Cantidad Kilos</th>
+          <th>% Rend.</th>
+          <th>Equivalencia</th>
+          <th>Eq × Kilos</th>
+          <th>División eq / total</th>
+          <th>Resultado Final</th>
+          <th>PSP/kg Asignado</th>
+          <th style="color:var(--gold,#d19900);">CIF</th>
+          <th>OPE/kg</th>
+          <th>MAT/kg</th>
+          <th>COSTO TOTAL</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tb-cal"></tbody>
+        <tfoot><tr class="tot">
+          <td>TOTAL</td>
+          <td id="tot-cal-kg">0</td>
+          <td id="tot-cal-pct">0%</td>
+          <td></td>
+          <td id="tot-cal-eqk">0</td>
+          <td id="tot-cal-diveq">0.00</td>
+          <td id="tot-cal-res">0.00</td>
+          <td id="tot-cal-psp">-</td>
+          <td id="tot-cal-cif">-</td>
+          <td id="tot-cal-ope">-</td>
+          <td id="tot-cal-mat">-</td>
+          <td id="tot-cal-ct">-</td>
+          <td></td>
+        </tr></tfoot>
+      </table></div>
+    </div>
+  </div>
+
+  <div style="text-align: center; padding: 1rem 0 2rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+    <button class="btn btn-pri" style="font-size: 1.1rem; padding: .75rem 2rem; box-shadow: var(--sh2);" onclick="exportarCSV()">
+      ⬇️ EXPORTAR CSV
+    </button>
+    <button class="btn btn-suc" style="font-size: 1.1rem; padding: .75rem 2rem; box-shadow: var(--sh2);" onclick="generarInforme()">
+      📄 GENERAR INFORME PDF
+    </button>
+  </div>
+
+</div>
+
+<div id="tab-tarifas" class="tab-pane no-print">
+  <div class="card">
+    <div class="ch">📥 Importar Tarifas (Excel, CSV, TXT)</div>
+    <div class="cb">
+      <div id="dz-tarifas" class="drop-zone" ondragover="this.classList.add('dragover'); event.preventDefault();" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event, 'tarifas')">
+        <div style="font-size:1.1rem; font-weight:bold; margin-bottom:.5rem;">Arrastra el archivo de tarifas aquí (.xlsx, .xls, .txt, .csv)</div>
+        <label class="btn btn-pri">
+          📂 Seleccionar Archivo
+          <input type="file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none" onchange="handleFile(this, 'tarifas')">
+        </label>
+        <div id="fname-tarifas" style="margin-top:.5rem; font-size:.8rem; color:var(--txm); font-style:italic;"></div>
+        <div id="badge-tarifas" style="margin-top:.5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap"><span style="color:var(--txm);font-size:.8rem">Sin datos guardados</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-tarifas" style="display:none;">
+    <div class="ch">
+      <div>✅ Tarifas Cargadas <span class="badge" id="cnt-tarifas" style="background:var(--sur3); padding:2px 8px; border-radius:10px; font-size:.75rem; margin-left:.5rem;">0</span></div>
+      <div style="display:flex; gap:.5rem; align-items:center;">
+        <label style="font-size:.75rem;">Centro:</label>
+        <select id="filt-tarifas" class="fi fi-txt" style="padding:2px 6px;" onchange="renderTarifasTable()"><option value="">Todos</option></select>
+        <button class="btn-del" style="margin-left:.5rem;" onclick="limpiarData('tarifas')">🗑 Limpiar</button>
+      </div>
+    </div>
+    <div class="cb" style="padding:0; overflow-x:auto;">
+      <div class="tbl-wrap"><table class="dt">
+        <thead><tr><th>Centro</th><th>Clase Act.</th><th>Desc CeCo</th><th>Desc Act.</th><th>Tipo Tarifa</th><th>Tarifa</th><th></th></tr></thead>
+        <tbody id="tb-tarifas-master"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-psp" class="tab-pane no-print">
+  <div class="card">
+    <div class="ch">📥 Importar PSP Valorizado (Excel, CSV, TXT)</div>
+    <div class="cb">
+      <div id="dz-psp" class="drop-zone" ondragover="this.classList.add('dragover'); event.preventDefault();" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event, 'psp')">
+        <div style="font-size:1.1rem; font-weight:bold; margin-bottom:.5rem;">Arrastra el archivo MB52/PSP aquí (.xlsx, .xls, .txt, .csv)</div>
+        <label class="btn" style="background:var(--suc); color:white; border-color:var(--suc);">
+          📂 Seleccionar Archivo
+          <input type="file" accept=".txt,.csv,.tsv,.xlsx,.xls" style="display:none" onchange="handleFile(this, 'psp')">
+        </label>
+        <div id="fname-psp" style="margin-top:.5rem; font-size:.8rem; color:var(--txm); font-style:italic;"></div>
+        <div id="badge-psp" style="margin-top:.5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap"><span style="color:var(--txm);font-size:.8rem">Sin datos guardados</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-psp" style="display:none;">
+    <div class="ch">
+      <div>✅ PSP Cargados <span class="badge" id="cnt-psp" style="background:var(--sur3); padding:2px 8px; border-radius:10px; font-size:.75rem; margin-left:.5rem;">0</span></div>
+      <div style="display:flex; gap:.5rem; align-items:center;">
+        <label style="font-size:.75rem;">Centro:</label>
+        <select id="filt-psp" class="fi fi-txt" style="padding:2px 6px;" onchange="renderPSPTable()"><option value="">Todos</option></select>
+        <button class="btn-del" style="margin-left:.5rem;" onclick="limpiarData('psp')">🗑 Limpiar</button>
+      </div>
+    </div>
+    <div class="cb" style="padding:0; overflow-x:auto;">
+      <div class="tbl-wrap"><table class="dt">
+        <thead><tr><th>Material</th><th>Centro</th><th>Descripción</th><th>Stock</th><th>Valor Total</th><th>USD/UN</th><th>Moneda</th><th></th></tr></thead>
+        <tbody id="tb-psp-master"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<div id="informe-print" style="display: none;"></div>
+<div id="toast">Acción completada</div>
+
+<script>
+let tarifasMaster = [];
+let pspMaster = [];
+let centroActual = "";
+let tarifasSeleccionadas = {};
+
+let empaques = [
+  {code:"15003273", desc:"ENV TAPA EXHIBIDOR", cons:827, usd:0.42},
+  {code:"15003267", desc:"ENV BOLSA ARANDANOS", cons:13235, usd:0.12}
+];
+let psps = [{code:"13003012", desc:"PSE ARA USDA", kg:11000, usd:2.36}];
+let cals = [
+  {n:"PTT",     pct:75, kg:0, eq:30, cif:0}, 
+  {n:"PREMIUM", pct:0,  kg:0, eq:25, cif:0}, 
+  {n:"STD",     pct:0,  kg:0, eq:25, cif:0}, 
+  {n:"PSP",     pct:0,  kg:0, eq:20, cif:0}, 
+  {n:"CRUMBLE", pct:0,  kg:0, eq:15, cif:0}, 
+  {n:"BLOCK", pct:0, kg:0, eq:10}
+];
+
+function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function s(id, val) { const e = document.getElementById(id); if(e) e.textContent = val; }
+function showToast(msg, isError=false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.background = isError ? "var(--err)" : "var(--suc)";
+  t.style.opacity = "1";
+  setTimeout(() => t.style.opacity = "0", 3000);
+}
+function toggleTheme() {
+  const d = document.documentElement;
+  d.setAttribute("data-theme", d.getAttribute("data-theme") === "dark" ? "light" : "dark");
+}
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function handleDrop(e, type) {
+  e.preventDefault();
+  document.getElementById("dz-" + type).classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if(!file) return;
+  processFile(file, type);
+}
+
+function handleFile(input, type) {
+  const file = input.files[0];
+  if(!file) return;
+  processFile(file, type);
+  input.value = "";
+}
+
+function processFile(file, type) {
+  const fname = file.name.toLowerCase();
+  if(fname.endsWith(".xlsx") || fname.endsWith(".xls")) {
+    if(typeof XLSX === 'undefined') {
+      showToast("Cargando lector Excel, intenta en 1 seg.", true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const ws = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ""});
+        processJSON(json, type, file.name);
+      } catch (err) {
+        showToast("Error leyendo Excel.", true);
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = ev => processCSVText(ev.target.result, type, file.name);
+    reader.readAsText(file, "UTF-8");
+  }
+}
+
+function processDataRows(rows, type, fname) {
+  if (!rows || rows.length < 2) return;
+
+  const header = rows[0].map(c => String(c).toLowerCase().trim());
+  let count = 0;
+
+  if(type === 'tarifas') {
+    let iCeCoCod = header.findIndex(h => h === "centro de coste" || h.includes("coste"));
+    let iCentro = header.findIndex(h => h === "centro" || h.includes("plant"));
+    let iAct = header.findIndex(h => h.includes("clase") || h.includes("actividad"));
+    let iDescCeco = header.findIndex(h => h.includes("texto breve ceco"));
+    let iDescAct = header.findIndex(h => h.includes("txt.breve cl.activ.") || h.includes("desc"));
+    let iTarifa = header.findIndex(h => h === "tarifa" || h.includes("tarifa global"));
+
+    // Fallbacks
+    if (iCeCoCod < 0) iCeCoCod = 0;
+    if (iCentro < 0) iCentro = 1;
+    if (iAct < 0) iAct = 2;
+    if (iDescCeco < 0) iDescCeco = 3;
+    if (iDescAct < 0) iDescAct = 4;
+    if (iTarifa < 0) iTarifa = 6; // Columna G en tu nueva imagen asumiendo A=0
+
+    for(let i=1; i<rows.length; i++) {
+      const row = rows[i];
+      if(!row || row.length < 3 || !row[iCentro]) continue;
+
+      const cleanNum = (val) => {
+        if(val === undefined || val === "") return 0;
+        if(typeof val === 'number') return val;
+        return parseFloat(String(val).replace(/\./g, '').replace(',', '.')) || 0;
+      };
+
+      let centroStr = String(row[iCentro]).trim();
+      if (!centroStr || centroStr.toLowerCase() === "centro") continue;
+
+      let tg = cleanNum(row[iTarifa]);
+
+      let cecoCodeStr = String(row[iCeCoCod]||"").trim().toUpperCase();
+      let descCeCoStr = String(row[iDescCeco]||"").trim();
+      let tipoTarifa = "PRODUCCIÓN";
+
+      // Diferenciación exacta por código de Centro de Coste
+      if(centroStr === "1200" && (cecoCodeStr === "CCP9317" || cecoCodeStr === "CCP9313")) {
+        tipoTarifa = "ENVASADO";
+      }
+
+      tarifasMaster.push({
+        _id: "T" + Date.now() + Math.random().toString(36).substr(2,9),
+        centro: centroStr,
+        cecoCode: cecoCodeStr,
+        claseAct: String(row[iAct]||"").trim(),
+        descCeCo: descCeCoStr,
+        descAct: String(row[iDescAct]||"").trim(),
+        tipoTarifa: tipoTarifa,
+        tarifa: tg
+      });
+      count++;
+    }
+  } 
+  else { // PSP
+    let iMat = header.findIndex(h => h.includes("material") || h.includes("código"));
+    let iCentro = header.findIndex(h => h === "centro" || h.includes("plant") || h.includes("ceco"));
+    let iDesc = header.findIndex(h => h.includes("texto") || h.includes("desc"));
+    let iStock = header.findIndex(h => h.includes("stock total") || h.includes("stock"));
+    let iValorTotal = header.findIndex(h => h.includes("valor total") || h.includes("valor"));
+    let iMoneda = header.findIndex(h => h.includes("moneda"));
+    let iUsd = header.findIndex(h => h === "usd" || h === "usd/un");
+
+    if(iMat < 0) iMat = 0;
+    if(iCentro < 0) iCentro = 1;
+    if(iDesc < 0) iDesc = 2;
+    if(iValorTotal < 0) iValorTotal = 3;
+    if(iMoneda < 0) iMoneda = 4;
+    if(iStock < 0) iStock = 5;
+    if(iUsd < 0) iUsd = 7; 
+
+    for(let i=1; i<rows.length; i++) {
+      const row = rows[i];
+      if(!row || row.length < 3 || !row[iCentro]) continue;
+
+      const cleanNum = (val) => {
+        if(val === undefined || val === "") return 0;
+        if(typeof val === 'number') return val;
+        return parseFloat(String(val).replace(/\./g, '').replace(',', '.')) || 0;
+      };
+
+      let centroStr = String(row[iCentro]).trim();
+      if (!centroStr || centroStr.toLowerCase() === "centro") continue;
+
+      let stock = cleanNum(row[iStock]);
+      let valorTotal = cleanNum(row[iValorTotal]);
+
+      let usd = iUsd >= 0 ? cleanNum(row[iUsd]) : 0;
+      let valorUSD = usd > 0 ? usd : (stock > 0 ? (valorTotal / stock) : 0);
+
+      pspMaster.push({
+        material: String(row[iMat]||"").trim(),
+        centro: centroStr,
+        desc: String(row[iDesc]||"").trim(),
+        valorTotal: valorTotal,
+        moneda: String(row[iMoneda]||"USD").trim(),
+        stock: stock,
+        unidad: "KG",
+        valorUSD: valorUSD
+      });
+      count++;
+    }
+  }
+
+  if(count > 0) {
+    showToast(`✅ ${count} registros importados.`);
+    if(type === 'tarifas') {
+      document.getElementById("fname-tarifas").textContent = "📄 " + fname;
+      renderTarifasTable();
+      try{localStorage.setItem('sim_tarifas',JSON.stringify(tarifasMaster));localStorage.setItem('sim_tarifas_fname',fname);}catch(e){}
+      renderPersistBadge('tarifas',fname);
+    } else {
+      document.getElementById("fname-psp").textContent = "📄 " + fname;
+      renderPSPTable();
+      try{localStorage.setItem('sim_psps',JSON.stringify(psps));localStorage.setItem('sim_psps_fname',fname);}catch(e){}
+      renderPersistBadge('psp',fname);
+    }
+    buildCentros();
+    calcProduccion();
+  } else {
+    showToast(`⚠️ No se detectaron datos válidos. Verifica el Excel.`, true);
+  }
+}
+
+function processJSON(jsonArray, type, fname) {
+  processDataRows(jsonArray, type, fname);
+}
+
+function processCSVText(raw, type, fname) {
+  if(!raw) return;
+  const lines = raw.replace(/^\uFEFF/, "").split(/\r?\n/);
+  const sep = lines[0] && lines[0].includes("\t") ? "\t" : (lines[0] && lines[0].includes(";") ? ";" : ",");
+  const rows = lines.map(l => l.split(sep).map(c => c.replace(/^"+|"+$/g, "")));
+  processDataRows(rows, type, fname);
+}
+
+function limpiarData(type) {
+  if(type === 'tarifas') { tarifasMaster = []; renderTarifasTable(); }
+  else { pspMaster = []; renderPSPTable(); }
+  buildCentros(); calcProduccion();
+}
+
+function buildCentros() {
+  const centrosSet = new Set();
+  tarifasMaster.forEach(t => centrosSet.add(String(t.centro).trim()));
+  pspMaster.forEach(p => centrosSet.add(String(p.centro).trim()));
+  const arr = [...centrosSet].filter(c => c && c !== "SIN_CENTRO" && c !== "undefined").sort();
+
+  const updateSel = (id) => {
+    const el = document.getElementById(id);
+    const val = el.value;
+    el.innerHTML = id === "centro-activo" ? '<option value="">-- Todos / Sin Centro --</option>' : '<option value="">Todos</option>';
+    arr.forEach(c => { el.innerHTML += `<option value="${c}">${c}</option>`; });
+    el.value = arr.includes(val) ? val : "";
+  };
+
+  updateSel("centro-activo");
+  updateSel("filt-tarifas");
+  updateSel("filt-psp");
+}
+
+
+function buscarEmpRow(idx) {
+  const item = empaques[idx];
+  if(!item) return;
+  const code = normalizarCodigo(item.code);
+  if(!code || code === "0") {
+    item.desc = "";
+    item.usd = 0;
+    renderEmpPsp();
+    calcProduccion();
+    return;
+  }
+
+  let match = null;
+  if(centroActual) {
+    match = pspMaster.find(p => normalizarCodigo(p.material) === code && String(p.centro).trim() === String(centroActual).trim());
+  }
+  if(!match) {
+    match = pspMaster.find(p => normalizarCodigo(p.material) === code);
+  }
+
+  if(match) {
+    item.code = String(match.material || item.code).trim();
+    item.desc = String(match.desc || "").trim();
+    item.usd = Number(Number(match.valorUSD || 0).toFixed(2));
+  } else {
+    item.desc = "No encontrado";
+    item.usd = 0;
+    showToast(`Empaque SKU ${item.code} no encontrado${centroActual ? ' en centro ' + centroActual : ''}.`, true);
+  }
+  renderEmpPsp();
+  calcProduccion();
+}
+
+function normalizarCodigo(v) {
+  return String(v || "").trim().replace(/^0+/, "") || "0";
+}
+
+function buscarPSPRow(idx) {
+  const item = psps[idx];
+  if(!item) return;
+  const code = normalizarCodigo(item.code);
+  if(!code || code === "0") {
+    item.desc = "";
+    item.usd = 0;
+    renderEmpPsp();
+    calcProduccion();
+    return;
+  }
+
+  let match = null;
+  if(centroActual) {
+    match = pspMaster.find(p => normalizarCodigo(p.material) === code && String(p.centro).trim() === String(centroActual).trim());
+  }
+  if(!match) {
+    match = pspMaster.find(p => normalizarCodigo(p.material) === code);
+  }
+
+  if(match) {
+    item.code = String(match.material || item.code).trim();
+    item.desc = String(match.desc || "").trim();
+    item.usd = Number(Number(match.valorUSD || 0).toFixed(2));
+  } else {
+    item.desc = "No encontrado";
+    item.usd = 0;
+    showToast(`SKU ${item.code} no encontrado${centroActual ? ' en centro ' + centroActual : ''}.`, true);
+  }
+  renderEmpPsp();
+  calcProduccion();
+}
+
+function syncCentro(val) {
+  centroActual = val;
+  const ids = ["centro-activo", "filt-tarifas", "filt-psp"];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(el && el.value !== val) el.value = val;
+  });
+
+  renderTarifaSelectorGrid();
+  if(typeof renderTarifasTable === "function") renderTarifasTable();
+  if(typeof renderPSPTable === "function") renderPSPTable();
+
+  empaques.forEach((_, i) => buscarEmpRow(i));
+  psps.forEach((_, i) => buscarPSPRow(i));
+  calcProduccion();
+}
+
+function renderTarifasTable() {
+  const tb = document.getElementById("tb-tarifas-master");
+  tb.innerHTML = "";
+  let data = centroActual ? tarifasMaster.filter(t => String(t.centro).trim() === String(centroActual).trim()) : tarifasMaster;
+
+  document.getElementById("cnt-tarifas").textContent = data.length;
+  document.getElementById("card-tarifas").style.display = tarifasMaster.length ? "block" : "none";
+
+  data.forEach(t => {
+    const realIdx = tarifasMaster.indexOf(t);
+    tb.innerHTML += `<tr>
+      <td><span style="background:var(--prihl);color:var(--pri);padding:2px 6px;border-radius:4px;font-size:.7rem;font-weight:bold">${t.centro}</span></td>
+      <td>${t.claseAct}</td><td>${t.cecoCode} - ${t.descCeCo}</td><td><strong>${t.descAct}</strong></td>
+      <td><span style="background:${t.tipoTarifa === 'ENVASADO' ? 'var(--psphl)' : 'var(--suchl)'};color:${t.tipoTarifa === 'ENVASADO' ? 'var(--psp)' : 'var(--suc)'};padding:2px 6px;border-radius:4px;font-size:.7rem;font-weight:bold">${t.tipoTarifa}</span></td>
+      <td style="color:var(--pri);font-weight:bold;font-family:var(--mono);text-align:right">${t.tarifa.toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:4})}</td>
+      <td><button class="btn-del" onclick="tarifasMaster.splice(${realIdx},1);renderTarifasTable();buildCentros();calcProduccion();">×</button></td>
+    </tr>`;
+  });
+  renderTarifaSelectorGrid();
+}
+
+function renderPSPTable() {
+  const tb = document.getElementById("tb-psp-master");
+  tb.innerHTML = "";
+  let data = centroActual ? pspMaster.filter(p => String(p.centro).trim() === String(centroActual).trim()) : pspMaster;
+
+  document.getElementById("cnt-psp").textContent = data.length;
+  document.getElementById("card-psp").style.display = pspMaster.length ? "block" : "none";
+
+  data.forEach(p => {
+    const realIdx = pspMaster.indexOf(p);
+    tb.innerHTML += `<tr>
+      <td style="font-family:var(--mono)">${p.material}</td>
+      <td><span style="background:var(--prihl);color:var(--pri);padding:2px 6px;border-radius:4px;font-size:.7rem;font-weight:bold">${p.centro}</span></td>
+      <td>${p.desc}</td>
+      <td style="text-align:right;font-family:var(--mono)">${p.stock.toLocaleString("es-CL",{minimumFractionDigits:3})}</td>
+      <td style="text-align:right;font-family:var(--mono)">${p.valorTotal.toLocaleString("es-CL",{minimumFractionDigits:2})}</td>
+      <td style="color:var(--suc);font-weight:bold;text-align:right;font-family:var(--mono)">${p.valorUSD.toLocaleString("es-CL", {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+      <td>${p.moneda}</td>
+      <td><button class="btn-del" onclick="pspMaster.splice(${realIdx},1);renderPSPTable();buildCentros();">×</button></td>
+    </tr>`;
+  });
+}
+
+function renderTarifaSelectorGrid() {
+  const cont = document.getElementById("tarifa-selector-container");
+  let data = centroActual ? tarifasMaster.filter(t => String(t.centro).trim() === String(centroActual).trim()) : tarifasMaster;
+
+  if(data.length === 0) {
+    cont.innerHTML = `<div style="color:var(--txm);font-size:.85rem;">No hay tarifas cargadas${centroActual?' para el centro '+centroActual:''}.</div>`;
+    return;
+  }
+
+  const grupos = {};
+  data.forEach(t => { if(!grupos[t.centro]) grupos[t.centro]=[]; grupos[t.centro].push(t); });
+
+  cont.innerHTML = "";
+  for(const c in grupos) {
+    const grpDiv = document.createElement("div");
+    grpDiv.style.marginBottom = "1rem";
+
+    grpDiv.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--div); padding-bottom:.25rem; margin-bottom:.75rem;">
+        <span style="font-weight:bold; color:var(--txm); text-transform:uppercase; font-size:.75rem;">Centro: ${c}</span>
+        <div>
+          <button class="btn-del" style="color:var(--pri); background:var(--prihl);" onclick="selAllCentro('${c}', true)">Sel. Todos</button>
+          <button class="btn-del" style="color:var(--txm); background:var(--sur3);" onclick="selAllCentro('${c}', false)">Desel.</button>
+        </div>
+      </div>
+      <div class="tarifa-grid" id="tg-${c}"></div>
+    `;
+    cont.appendChild(grpDiv);
+
+    const tg = grpDiv.querySelector('.tarifa-grid');
+    grupos[c].forEach(t => {
+      // Usar un key único que incluya la clase de actividad y el CeCo para evitar colisiones
+      const key = t._id;
+      const isSel = tarifasSeleccionadas[t._id] || false;
+      const item = document.createElement("div");
+      item.className = "t-item" + (isSel ? " sel" : "");
+      item.innerHTML = `
+        <div class="t-hdr"><span>${t.descAct || t.claseAct}</span> <input type="checkbox" ${isSel?'checked':''} style="pointer-events:none;"></div>
+        <div class="t-val">${t.tarifa.toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:4})}</div>
+        <div style="font-size:.7rem; color:var(--txm); margin-top:.25rem; display:flex; justify-content:space-between; align-items:center;">
+          <span>${t.claseAct}</span>
+          <span style="background:${t.tipoTarifa === 'ENVASADO' ? 'var(--psphl)' : 'var(--suchl)'};color:${t.tipoTarifa === 'ENVASADO' ? 'var(--psp)' : 'var(--suc)'};padding:1px 4px;border-radius:3px;font-weight:bold;font-size:0.65rem;">${t.tipoTarifa}</span>
+        </div>
+      `;
+      item.onclick = () => {
+        tarifasSeleccionadas[key] = !tarifasSeleccionadas[key];
+        renderTarifaSelectorGrid();
+        calcProduccion();
+      };
+      tg.appendChild(item);
+    });
+  }
+}
+
+function selAllCentro(cen, state) {
+  tarifasMaster.filter(t => String(t.centro).trim() === String(cen).trim()).forEach(t => {
+    tarifasSeleccionadas[t._id] = state;
+  });
+  renderTarifaSelectorGrid();
+  calcProduccion();
+}
+
+function renderEmpPsp() {
+  const te = document.getElementById("tb-emp"); te.innerHTML = "";
+  let totE = 0;
+  empaques.forEach((e,i) => {
+    const sub = e.cons * e.usd; totE += sub;
+    te.innerHTML += `<tr>
+      <td><input class="txt" value="${e.code || ''}" placeholder="SKU" oninput="empaques[${i}].code=this.value" onchange="buscarEmpRow(${i})"></td>
+      <td><input class="txt" value="${e.desc || ''}" placeholder="Descripción automática" readonly style="background: var(--sur2);"></td>
+      <td><input type="text" inputmode="decimal" value="${e.cons===0?'':`${e.cons}`}" placeholder="0" oninput="empaques[${i}].cons=parseFloat(this.value.replace(',','.'))||0;calcProduccion()" onblur="renderEmpPsp()" autocomplete="off" style="text-align:right"></td>
+      <td><input type="text" inputmode="decimal" value="${e.usd===0?'':`${e.usd.toFixed(2)}`}" placeholder="0.00" oninput="empaques[${i}].usd=parseFloat(this.value.replace(',','.'))||0;calcProduccion()" onblur="renderEmpPsp()" autocomplete="off" style="text-align:right"></td>
+      <td>${sub.toFixed(2)}</td>
+      <td><button class="btn-del" onclick="empaques.splice(${i},1);renderEmpPsp();calcProduccion()">×</button></td>
+    </tr>`;
+  });
+  s("tot-emp-usd", totE.toFixed(2));
+
+  const tp = document.getElementById("tb-psp"); tp.innerHTML = "";
+  let totPkg = 0, totPusd = 0;
+  psps.forEach((p,i) => {
+    const sub = p.kg * p.usd; totPkg += p.kg; totPusd += sub;
+    tp.innerHTML += `<tr>
+      <td><input class="txt" value="${p.code || ''}" placeholder="SKU" oninput="psps[${i}].code=this.value" onchange="buscarPSPRow(${i})"></td>
+      <td><input class="txt" value="${p.desc || ''}" placeholder="Descripción automática" readonly style="background: var(--sur2);"></td>
+      <td style="text-align:center">
+        <input type="text" inputmode="decimal" value="${p.pct>0?p.pct+'%':''}" placeholder="%" 
+          oninput="(function(v,idx){var pct=parseFloat(v.replace('%','').replace(',','.'))||0;psps[idx].pct=pct;var con=parseFloat(document.getElementById('in-consumo').value)||0;if(pct>0&&con>0){psps[idx].kg=Math.round(con*pct/100*1000)/1000;}calcProduccion();})(this.value,${i})"
+          onblur="renderEmpPsp()" autocomplete="off" style="text-align:right;width:60px">
+      </td>
+      <td><input type="text" inputmode="decimal" value="${p.kg===0?'':`${p.kg}`}" placeholder="0" 
+        oninput="psps[${i}].kg=parseFloat(this.value.replace(',','.'))||0;psps[${i}].pct=0;calcProduccion()" 
+        onblur="renderEmpPsp()" autocomplete="off" style="text-align:right"></td>
+      <td><input type="text" inputmode="decimal" value="${p.usd===0?'':`${p.usd.toFixed(2)}`}" placeholder="0.00" oninput="psps[${i}].usd=parseFloat(this.value.replace(',','.'))||0;calcProduccion()" onblur="renderEmpPsp()" autocomplete="off" style="text-align:right"></td>
+      <td>${sub.toFixed(2)}</td>
+      <td><button class="btn-del" onclick="psps.splice(${i},1);renderEmpPsp();calcProduccion()">×</button></td>
+    </tr>`;
+  });
+  s("tot-psp-kg", totPkg.toLocaleString("es-CL"));
+  s("tot-psp-usd", totPusd.toFixed(2));
+}
+
+function addEmp() { empaques.push({code:"", desc:"", cons:0, usd:0}); renderEmpPsp(); setTimeout(function(){var r=document.querySelectorAll("#tb-emp tr"); if(r.length){var inp=r[r.length-1].querySelector("input.txt");if(inp){inp.focus();inp.select();}}},50);}
+function addPsp() { psps.push({code:"", desc:"", pct:0, kg:0, usd:0}); renderEmpPsp(); setTimeout(function(){var r=document.querySelectorAll("#tb-psp tr"); if(r.length){var inp=r[r.length-1].querySelector("input.txt");if(inp){inp.focus();inp.select();}}},50);}
+function addCal() { cals.push({n:"Nueva", pct:0, kg:0, eq:10, cif:0}); renderDistribucionPorcentaje(); calcProduccion(); setTimeout(function(){var r=document.querySelectorAll("#tb-dist-pct tr"); if(r.length){var inp=r[r.length-1].querySelector("input");if(inp){inp.focus();inp.select();}}},50);}
+
+
+function renderDistribucionPorcentaje() {
+  const tb = document.getElementById("tb-dist-pct");
+  if(!tb) return;
+  // Leer consumo desde in-consumo (ya calculado como kgh*h)
+  const consumoRaw = (document.getElementById("in-consumo")||{value:"0"}).value||"0";
+  const consumo = parseFloat(consumoRaw.replace(/\./g,"").replace(",",".")) || 0;
+  let h = "", totPct = 0, totKg = 0;
+
+  cals.forEach((c, i) => {
+    const pct = parseFloat(c.pct) || 0;
+    c.kg = consumo > 0 ? Math.round(consumo * pct / 100 * 1000) / 1000 : 0;
+    totPct += pct;
+    totKg  += c.kg;
+    h += `<tr>
+      <td style="padding:0.5rem;">
+        <input type="text" value="${c.n}" onchange="cals[${i}].n=this.value;renderDistribucionPorcentaje();calcProduccion();" style="width:110px;font-weight:500;padding:4px;border:1px solid transparent;background:transparent;color:var(--tx);">
+      </td>
+      <td style="padding:0.5rem;text-align:center;">
+        <div style="display:flex;justify-content:center;align-items:center;">
+          <input type="text" inputmode="decimal" value="${pct||''}" placeholder="0"
+            oninput="(function(val,idx){var p=parseFloat(val.replace(',','.'))||0;if(p>100)p=100;cals[idx].pct=p;renderDistribucionPorcentaje();calcProduccion();})(this.value,${i})"
+            autocomplete="off" style="width:65px;text-align:right;padding:4px;border:1px solid var(--bor);border-radius:4px;background:var(--sur);color:var(--tx);">
+          <span style="margin-left:4px;font-weight:bold;color:var(--txm);">%</span>
+        </div>
+      </td>
+      <td style="padding:0.5rem;text-align:right;font-weight:bold;font-family:monospace;color:var(--txm);">${c.kg > 0 ? c.kg.toLocaleString("es-CL",{maximumFractionDigits:3}) : "—"}</td>
+      <td style="padding:0.5rem;text-align:center;"><input type="text" inputmode="decimal" value="${(c.cif||0).toFixed(2)}" oninput="cals[${i}].cif=parseFloat(this.value.replace(',','.'))||0;calcProduccion();" autocomplete="off" style="width:70px;text-align:right;padding:4px;border:1px solid var(--bor);border-radius:4px;background:var(--sur);color:var(--gold,#d19900);font-weight:bold;"></td>
+    </tr>`;
+  });
+
+  tb.innerHTML = h;
+  const elTotPct = document.getElementById("tot-pct-rend");
+  if(elTotPct) elTotPct.textContent = totPct.toFixed(2) + "%";
+  const elTotKg = document.getElementById("tot-kg-rend");
+  if(elTotKg) elTotKg.textContent = totKg.toLocaleString("es-CL",{maximumFractionDigits:3});
+
+  // Actualizar campos readonly
+  const iqfEl = document.getElementById("in-iqf");
+  if(iqfEl) iqfEl.value = totPct > 0 ? totPct.toFixed(2)+"%" : "";
+  const altaEl = document.getElementById("in-alta");
+  if(altaEl) altaEl.value = totKg > 0 ? totKg.toLocaleString("es-CL",{maximumFractionDigits:3}) : "";
+}
+
+
+function calcProduccion() {
+  const p = v("in-personas"), h = v("in-horas");
+  const hh = p * h;
+  document.getElementById("in-hh").value = hh;
+  s("kpi-hh", hh);
+
+  // Consumo = KG/Hora × Horas
+  const kgh = parseFloat((document.getElementById("in-kgh").value||"0").replace(",",".")) || 0;
+  const consumo = kgh > 0 ? Math.round(kgh * h * 1000) / 1000 : 0;
+  const consumoEl = document.getElementById("in-consumo");
+  if(consumoEl) consumoEl.value = consumo > 0 ? consumo.toLocaleString("es-CL") : "";
+  s("kpi-consumo", consumo > 0 ? consumo.toLocaleString("es-CL") : "—");
+
+  const consumoCalc = consumo || 1;
+
+  // Calcular kg por calidad inline (sin llamar renderDistribucionPorcentaje → evita loop)
+  let altaSum = 0, totPctSum = 0;
+  cals.forEach(function(c) {
+    const pct = parseFloat(c.pct) || 0;
+    c.kg = consumo > 0 ? Math.round(consumo * pct / 100 * 1000) / 1000 : 0;
+    altaSum   += c.kg;
+    totPctSum += pct;
+  });
+  const alta = altaSum;
+  const altaEl = document.getElementById("in-alta");
+  if(altaEl) altaEl.value = alta > 0 ? alta.toLocaleString("es-CL",{maximumFractionDigits:3}) : "";
+  const iqfEl = document.getElementById("in-iqf");
+  if(iqfEl) iqfEl.value = totPctSum > 0 ? totPctSum.toFixed(2)+"%" : "";
+
+  const altaCalc = alta || 1;
+
+  // Tarifas y costos
+  let tarifaBase = 0;
+  tarifasMaster.forEach(t => { if(tarifasSeleccionadas[t._id]) tarifaBase += t.tarifa; });
+  const otrosIngresos = v("in-otros") || 0;
+  const tarifaTotal   = tarifaBase + otrosIngresos;
+  const totalCLP      = tarifaTotal * hh;
+
+  const elBase = document.getElementById("in-suma-tarifas-base");
+  if(elBase) elBase.value = tarifaBase.toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:4});
+  const elTotal = document.getElementById("in-suma-tarifas");
+  if(elTotal) elTotal.value = tarifaTotal.toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:4});
+  document.getElementById("in-total-clp").value = totalCLP.toLocaleString("es-CL",{maximumFractionDigits:0});
+  const lblTarifaSel = document.getElementById("lbl-tarifa-sel");
+  if(lblTarifaSel) lblTarifaSel.textContent = tarifaTotal.toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:4});
+
+  // OPE = Total CLP / Alta Producida / Tipo de Cambio
+  const tc  = v("in-tc") || 1;
+  const ope = altaCalc > 0 ? totalCLP / tc / altaCalc : 0;
+
+  renderEmpPsp();
+  let sumMatUsd = 0; empaques.forEach(e => sumMatUsd += (e.cons * e.usd));
+  let mat = sumMatUsd / consumoCalc;
+
+  let pspKg = 0, pspUsd = 0; psps.forEach(p => { pspKg+=p.kg; pspUsd+=(p.kg*p.usd); });
+  const pspVal = pspKg > 0 ? (pspUsd / pspKg) : 2.36;
+
+  const ct = pspVal + ope + mat;
+
+  s("kpi-ct",  ct.toFixed(2));
+  s("kpi-psp", pspVal.toFixed(2));
+  s("kpi-ope", ope.toFixed(2));
+  s("kpi-mat", mat.toFixed(2));
+
+  // Calculo de equivalencias
+  let refValorConsumo    = pspVal;
+  let refKilosConsumo    = consumoCalc;
+  let valorConsumoXKilos = refValorConsumo * refKilosConsumo;
+
+  s("lbl-consumo", refKilosConsumo.toLocaleString("es-CL"));
+  s("lbl-psp",     refValorConsumo.toLocaleString("es-CL",{minimumFractionDigits:2}));
+  s("lbl-ref",     valorConsumoXKilos.toLocaleString("es-CL",{minimumFractionDigits:0}));
+
+  const tb = document.getElementById("tb-cal"); tb.innerHTML = "";
+  let tk = 0, tEqK = 0, tDivEq = 0, tRes = 0;
+
+  cals.forEach(c => { let eqXKilos = c.eq * c.kg; tk += c.kg; tEqK += eqXKilos; });
+
+  cals.forEach((c, i) => {
+    const pct = (c.kg / consumoCalc) * 100;
+    let eqXKilos    = c.eq * c.kg;
+    let divEqTotal  = tEqK > 0 ? eqXKilos / tEqK : 0;
+    let resultFinal = divEqTotal * valorConsumoXKilos;
+    let pspAsignado = c.kg > 0 ? resultFinal / c.kg : 0;
+    // Persistir valores por calidad para snap/modal/CSV
+    cals[i].pspKg = c.kg > 0 ? pspAsignado : 0;
+    cals[i].opeKg = c.kg > 0 ? ope : 0;
+    cals[i].matKg = c.kg > 0 ? mat : 0;
+    cals[i].ctKg  = c.kg > 0 ? (pspAsignado + (c.cif||0) + ope + mat) : 0;
+    tDivEq += divEqTotal;
+    tRes   += resultFinal;
+
+    tb.innerHTML += `<tr>
+      <td><input class="txt" value="${c.n}" oninput="cals[${i}].n=this.value"></td>
+      <td><input type="text" inputmode="decimal" value="${parseFloat(c.kg.toFixed(2))}" oninput="cals[${i}].kg=+this.value; cals[${i}].pct=(cals[${i}].kg/(${consumoCalc}||1))*100; renderDistribucionPorcentaje(); calcProduccion()" autocomplete="off"></td>
+      <td>${pct.toFixed(1)}%</td>
+      <td><input type="text" inputmode="decimal" value="${c.eq}" oninput="cals[${i}].eq=+this.value;calcProduccion()" autocomplete="off"></td>
+      <td>${eqXKilos.toLocaleString("es-CL")}</td>
+      <td>${divEqTotal.toFixed(2)}</td>
+      <td>${c.kg>0 ? resultFinal.toLocaleString("es-CL",{maximumFractionDigits:2}) : '-'}</td>
+      <td style="color:var(--psp); font-weight:bold;">${c.kg>0 ? pspAsignado.toFixed(2) : '-'}</td>
+      <td><input type="text" inputmode="decimal" value="${(c.cif||0).toFixed(2)}" style="width:65px;color:var(--gold,#d19900);font-weight:bold;background:transparent;border:1px solid var(--brd,#ccc);border-radius:4px;padding:2px 4px;" oninput="cals[${i}].cif=+this.value;calcProduccion()" autocomplete="off"></td>
+      <td style="color:var(--pri)">${c.kg>0 ? ope.toFixed(2) : '-'}</td>
+      <td style="color:var(--suc)">${c.kg>0 ? mat.toFixed(2) : '-'}</td>
+      <td style="font-weight:bold">${c.kg>0 ? (pspAsignado+(c.cif||0)+ope+mat).toFixed(2) : '-'}</td>
+      <td><button class="btn-del" onclick="cals.splice(${i},1);calcProduccion()">×</button></td>
+    </tr>`;
+  });
+
+  s("tot-cal-kg",    tk.toLocaleString("es-CL"));
+  s("tot-cal-pct",   ((tk/consumoCalc)*100).toFixed(1) + "%");
+  s("tot-cal-eqk",   tEqK.toLocaleString("es-CL"));
+  s("tot-cal-diveq", tDivEq.toFixed(2));
+  s("tot-cal-res",   tRes.toLocaleString("es-CL",{maximumFractionDigits:2}));
+  s("tot-cal-psp",   pspVal.toFixed(2));
+  const _cifTotal = cals.filter(c=>c.kg>0).reduce((a,c)=>a+(c.cif||0),0);
+  s("tot-cal-cif",   _cifTotal>0 ? _cifTotal.toFixed(2) : "-");
+  s("tot-cal-ope",   ope.toFixed(2));
+  s("tot-cal-mat",   mat.toFixed(2));
+  s("tot-cal-ct",    ct.toFixed(2));
+
+  // Sincronizar tabla visual de distribución al final (sin recursión)
+  renderDistribucionPorcentaje();
+}
+
+
+function exportarCSV() {
+  const rows = [];
+  rows.push(["Centro", "Orden", "HH", "Kg/H", "Rdto IQF", "Consumo", "Alta"]);
+  rows.push([centroActual||"Todos", document.getElementById("in-orden").value, document.getElementById("in-hh").value, document.getElementById("in-kgh").value, document.getElementById("in-iqf").value, v("in-consumo"), v("in-alta")].join(";"));
+  rows.push("");
+  rows.push(["Costo Total USD/kg", "PSP USD/kg", "OPE USD/kg", "MAT USD/kg"].join(";"));
+  rows.push([document.getElementById("kpi-ct").textContent, document.getElementById("kpi-psp").textContent, document.getElementById("kpi-ope").textContent, document.getElementById("kpi-mat").textContent].join(";"));
+  rows.push("");
+  rows.push(["Calidad", "Kg", "%", "Equivalencia", "PSP/kg Asignado", "OPE/kg", "MAT/kg", "C.TOTAL"].join(";"));
+
+  const opeV = parseFloat(document.getElementById("kpi-ope").textContent);
+  const matV = parseFloat(document.getElementById("kpi-mat").textContent);
+
+  let pspVal = parseFloat(document.getElementById("kpi-psp").textContent);
+  let consumo = v("in-consumo");
+  let totalEqK = 0; cals.forEach(c => totalEqK += (c.eq * c.kg));
+  let refTotal = pspVal * consumo;
+
+  cals.forEach(c => {
+    if(c.kg > 0) {
+      let divEq = (c.eq * c.kg) / totalEqK;
+      let pspAsignado = (divEq * refTotal) / c.kg;
+      rows.push([c.n, c.kg, ((c.kg/consumo)*100).toFixed(1)+"%", c.eq, pspAsignado.toFixed(2), opeV.toFixed(2), matV.toFixed(2), (pspAsignado+(c.cif||0)+opeV+matV).toFixed(2)].join(";"));
+    }
+  });
+
+  const blob = new Blob(["\uFEFF" + rows.join("\n")], {type: "text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `Costeo_${centroActual||'General'}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function generarInforme() {
+  const _tipoInforme = (typeof selectedTarifas !== 'undefined' && selectedTarifas.length > 0 && selectedTarifas.some(t=>t.tipoTarifa==='ENVASADO')) ? 'Envasado' : 'Producción';
+  const _tituloInforme = `Simulación Costeo de ${_tipoInforme}`;
+  const _subTituloInforme = (document.getElementById('in-descripcion') ? document.getElementById('in-descripcion').value.trim() : '');
+  let pspRows = psps.map(p => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${p.code}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${p.desc}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align:center;">${p.kg.toLocaleString("es-CL")}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align:center;">${p.usd.toLocaleString("es-CL", {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+    </tr>
+  `).join("");
+  if(!pspRows) pspRows = `<tr><td colspan="4" style="padding: 10px; text-align:center;">No hay PSP ingresado</td></tr>`;
+
+  calcProduccion();
+  let opeV = parseFloat(document.getElementById("kpi-ope").textContent);
+  let matV = parseFloat(document.getElementById("kpi-mat").textContent);
+  let pspV = parseFloat(document.getElementById("kpi-psp").textContent);
+  let ct = parseFloat(document.getElementById("kpi-ct").textContent);
+  let d = new Date();
+  let dateStr = d.toLocaleDateString() + " " + d.toLocaleTimeString();
+
+  let consumo = v("in-consumo");
+  let totalEqK = 0; cals.forEach(c => totalEqK += (c.eq * c.kg));
+  let refTotal = pspV * consumo;
+
+  let html = `
+    <div style="font-family: sans-serif; color: #000; padding: 20px;">
+      <h1 style="border-bottom: 2px solid #0d6efd; padding-bottom: 10px; color: #1a1d24;">${_tituloInforme}</h1>
+      ${_subTituloInforme ? `<p style="margin:6px 0 14px;font-size:1.05em;color:#374151;font-style:italic;">${_subTituloInforme}</p>` : ""}
+      <table style="width:100%; border: none; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 4px;"><strong>Fecha Emisión:</strong> ${dateStr}</td>
+          <td style="padding: 4px;"><strong>Centro Productivo:</strong> ${centroActual || 'Todos / General'}</td>
+          <td style="padding: 4px; text-align:right;"><strong>N° Orden:</strong> <span style="font-size:1.2em; font-weight:bold;">${document.getElementById("in-orden").value}</span></td>
+        </tr>
+      </table>
+      <table style="width:100%; border-collapse: collapse; margin-bottom: 25px; border: 1px solid #ccc; font-size: 0.9em;">
+        <tr style="background: #f4f6f9;">
+          <th style="border: 1px solid #ccc; padding: 10px; text-align:center;">Consumo Total</th>
+          <th style="border: 1px solid #ccc; padding: 10px; text-align:center;">Alta Producida</th>
+          <th style="border: 1px solid #ccc; padding: 10px; text-align:center;">Rend. IQF</th>
+          <th style="border: 1px solid #ccc; padding: 10px; text-align:center;">N° Personas</th>
+          <th style="border: 1px solid #ccc; padding: 10px; text-align:center;">Kg/Hora</th>
+          <th style="border: 1px solid #ccc; padding: 10px; text-align:center;">T.C.</th>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 10px; text-align:center;">${v("in-consumo").toLocaleString("es-CL")} kg</td>
+          <td style="border: 1px solid #ccc; padding: 10px; text-align:center;">${v("in-alta").toLocaleString("es-CL")} kg</td>
+          <td style="border: 1px solid #ccc; padding: 10px; text-align:center;">${document.getElementById("in-iqf").value}%</td>
+          <td style="border: 1px solid #ccc; padding: 10px; text-align:center;">${v("in-personas")}</td>
+          <td style="border: 1px solid #ccc; padding: 10px; text-align:center;">${document.getElementById("in-kgh").value}</td>
+          <td style="border: 1px solid #ccc; padding: 10px; text-align:center;">${v("in-tc")}</td>
+        </tr>
+      </table>
+      <h2 style="background: #f4f6f9; padding: 10px; border-left: 4px solid #0d6efd; font-size:1.1em; color: #1a1d24;">PSP / Materia Prima</h2>
+      <table style="width:100%; border-collapse: collapse; margin-bottom: 30px; font-size:0.9em; text-align:left;">
+        <tr style="background: #f3f4f6; color: #4b5563;">
+          <th style="padding: 10px; border-bottom: 2px solid #ccc;">CÓDIGO</th>
+          <th style="padding: 10px; border-bottom: 2px solid #ccc;">DESCRIPCIÓN</th>
+          <th style="padding: 10px; border-bottom: 2px solid #ccc; text-align:center;">CANTIDAD (KG)</th>
+          <th style="padding: 10px; border-bottom: 2px solid #ccc; text-align:center;">USD$/KG</th>
+        </tr>
+        ${pspRows}
+      </table>
+      <h2 style="background: #f4f6f9; padding: 10px; border-left: 4px solid #198754; font-size:1.1em; color: #1a1d24;">Distribución por Equivalencia (PSP Dinámico)</h2>
+      <table style="width:100%; border-collapse: collapse; text-align: right; font-size:0.9em;">
+        <tr style="background: #eef0f4; color: #333;">
+          <th style="padding: 10px; border: 1px solid #ccc; text-align: left;">CALIDAD</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">Kg Salida</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">% Rend.</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">Eq.</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">PSP Asignado</th>
+          <th style="padding: 10px; border: 1px solid #ccc; color:#b45309;">CIF</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">OPE</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">MAT</th>
+          <th style="padding: 10px; border: 1px solid #ccc; font-weight:bold; background:#dbeafe; color:#0d6efd;">COSTO TOTAL</th>
+        </tr>`;
+  let totK = 0;
+  cals.forEach(c => {
+    if(c.kg > 0) {
+      totK += c.kg;
+      let divEq = (c.eq * c.kg) / totalEqK;
+      let pspAsignado = (divEq * refTotal) / c.kg;
+      html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc; text-align: left; font-weight:bold;">${c.n}</td>
+        <td style="padding: 8px; border: 1px solid #ccc;">${c.kg.toLocaleString("es-CL")}</td>
+        <td style="padding: 8px; border: 1px solid #ccc;">${((c.kg/consumo)*100).toFixed(1)}%</td>
+        <td style="padding: 8px; border: 1px solid #ccc;">${c.eq}</td>
+        <td style="padding: 8px; border: 1px solid #ccc; color:#7c3aed; font-weight:bold;">${pspAsignado.toFixed(2)}</td>
+        <td style="padding: 8px; border: 1px solid #ccc; color:#b45309;">${(c.cif||0).toFixed(2)}</td>
+        <td style="padding: 8px; border: 1px solid #ccc; color:#666;">${opeV.toFixed(2)}</td>
+        <td style="padding: 8px; border: 1px solid #ccc; color:#666;">${matV.toFixed(2)}</td>
+        <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; background:#f8f9fb;">${(pspAsignado+(c.cif||0)+opeV+matV).toFixed(2)}</td>
+      </tr>`;
+    }
+  });
+  html += `
+        <tr style="background:#eef0f4; font-weight:bold;">
+          <td style="padding: 10px; border: 1px solid #ccc; text-align: left;">TOTALES</td>
+          <td style="padding: 10px; border: 1px solid #ccc;">${totK.toLocaleString("es-CL")}</td>
+          <td style="padding: 10px; border: 1px solid #ccc;">${((totK/consumo)*100).toFixed(1)}%</td>
+          <td colspan="5" style="border: 1px solid #ccc; background:#fff;"></td>
+        </tr>
+      </table>
+    </div>
+  `;
+  let printDiv = document.getElementById("informe-print");
+  printDiv.innerHTML = html;
+  setTimeout(() => { window.print(); }, 100);
+}
+
+renderEmpPsp();
+calcProduccion();
+renderTarifaSelectorGrid();
+setTimeout(function(){cargarPersistidos();repararHistorial();renderHistorial();hActualizarEstado();},150);
+
+function renderPersistBadge(type,fname){
+  var id=type==='tarifas'?'badge-tarifas':'badge-psp';
+  var el=document.getElementById(id);if(!el)return;
+  el.innerHTML='<span style="display:flex;align-items:center;gap:.4rem;color:var(--suc);font-size:.8rem">'
+    +'<span style="width:8px;height:8px;border-radius:50%;background:var(--suc);display:inline-block"></span>'
+    +'<b>'+fname+'</b></span>'
+    +' <button onclick="limpiarPersistencia(\''+type+'\')" '
+    +'style="margin-left:.5rem;padding:2px 8px;font-size:.75rem;border:1px solid var(--err);'
+    +'border-radius:4px;background:transparent;color:var(--err);cursor:pointer">&#128465; Eliminar</button>';
+}
+
+function limpiarPersistencia(type){
+  if(type==='tarifas'){
+    if(!confirm('\u00bfEliminar tarifas guardadas del almacenamiento local?'))return;
+    localStorage.removeItem('sim_tarifas');localStorage.removeItem('sim_tarifas_fname');
+    tarifasMaster=[];renderTarifasTable();
+    var fn=document.getElementById('fname-tarifas');if(fn)fn.textContent='Ning\u00fan archivo cargado';
+    var b=document.getElementById('badge-tarifas');
+    if(b)b.innerHTML='<span style="color:var(--txm);font-size:.8rem">Sin datos guardados</span>';
+  } else {
+    if(!confirm('\u00bfEliminar PSP guardado del almacenamiento local?'))return;
+    localStorage.removeItem('sim_psps');localStorage.removeItem('sim_psps_fname');
+    psps=[];renderEmpPsp();
+    var fn=document.getElementById('fname-psp');if(fn)fn.textContent='Ning\u00fan archivo cargado';
+    var b=document.getElementById('badge-psp');
+    if(b)b.innerHTML='<span style="color:var(--txm);font-size:.8rem">Sin datos guardados</span>';
+  }
+  buildCentros();calcProduccion();
+  showToast('\uD83D\uDDD1 Datos eliminados del almacenamiento local.');
+}
+
+function cargarPersistidos(){
+  var tData=null,pData=null;
+  try{tData=JSON.parse(localStorage.getItem('sim_tarifas')||'null');}catch(e){}
+  try{pData=JSON.parse(localStorage.getItem('sim_psps')||'null');}catch(e){}
+  var tFname=localStorage.getItem('sim_tarifas_fname')||'';
+  var pFname=localStorage.getItem('sim_psps_fname')||'';
+  if(tData&&tData.length>0){
+    tarifasMaster=tData;
+    var fn=document.getElementById('fname-tarifas');if(fn)fn.textContent='\uD83D\uDCC4 '+tFname;
+    renderPersistBadge('tarifas',tFname);
+    renderTarifasTable();
+  }
+  if(pData&&pData.length>0){
+    psps=pData;
+    var fn=document.getElementById('fname-psp');if(fn)fn.textContent='\uD83D\uDCC4 '+pFname;
+    renderPersistBadge('psp',pFname);
+    renderEmpPsp();
+  }
+  if((tData&&tData.length>0)||(pData&&pData.length>0)){
+    buildCentros();calcProduccion();
+    showToast('\u2705 Datos restaurados desde almacenamiento local.');
+  }
+}
+
+</script>
+
+<div id="tab-historial" class="tab-pane no-print">
+  <div style="max-width:1200px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <div>
+        <h2 style="font-size:1.15rem;font-weight:700">&#128203; Historial de Costeos</h2>
+        <p style="color:var(--txm);font-size:.8rem">Guardado local en tu navegador. Persiste aunque cierres el navegador.</p>
+      <div id="hist-estado" style="padding:4px 0 2px;margin-top:4px"></div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-pri" onclick="exportarHistorialExcel()">&#128229; Excel</button>
+        <button class="btn" onclick="exportarHistorialCSV()">&#128196; CSV</button>
+        <button class="btn btn-pri" onclick="hDescargarSeleccion()">&#128229; Descargar Selecci&#243;n</button>
+        <button class="btn" onclick="confirmarLimpiarHistorial()" style="color:var(--err);border-color:var(--err)">&#128465; Limpiar</button>
+      </div>
+    </div>
+    <div class="card" style="padding:.75rem 1rem;display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+      <input type="text" id="filt-hist-texto" placeholder="Buscar orden, centro, descripcion..."
+        style="flex:1;min-width:200px;padding:.4rem .7rem;border:1px solid var(--bor);border-radius:var(--r2);background:var(--sur2);color:var(--tx)"
+        oninput="renderHistorial()">
+      <select id="filt-hist-centro" onchange="renderHistorial()"
+        style="padding:.4rem .7rem;border:1px solid var(--bor);border-radius:var(--r2);background:var(--sur2);color:var(--tx)">
+        <option value="">Todos los centros</option>
+      </select>
+      <span id="lbl-total-costeos" style="color:var(--txm);font-size:.82rem">0 costeos</span>
+    </div>
+    <div class="card" style="padding:0;overflow:auto">
+      <table style="font-size:.82rem;table-layout:fixed;width:100%">
+        <thead>
+          <tr style="background:var(--sur2);border-bottom:2px solid var(--div)">
+            <th style="padding:.6rem .8rem;text-align:center"><input type="checkbox" id="chk-all-hist" onclick="hToggleAll(this)" title="Seleccionar todos"></th>
+            <th style="padding:.6rem .6rem;text-align:left;width:148px;white-space:nowrap">Fecha</th>
+            <th style="padding:.6rem .6rem;text-align:left;width:55px">Orden</th>
+            <th style="padding:.6rem .6rem;text-align:left;width:55px">Centro</th>
+            <th style="padding:.6rem .6rem;text-align:left;width:140px">Descripcion</th>
+            <th style="padding:.6rem .6rem;text-align:right;width:72px">Consumo</th>
+            <th style="padding:.6rem .6rem;text-align:right;width:62px">Alta</th>
+            <th style="padding:.6rem .6rem;text-align:right;width:62px">PSP</th>
+            <th style="padding:.6rem .6rem;text-align:right;width:55px">CIF</th>
+            <th style="padding:.6rem .6rem;text-align:right;width:55px">OPE</th>
+            <th style="padding:.6rem .6rem;text-align:right;width:55px">MAT</th>
+            <th style="padding:.6rem .6rem;text-align:right;width:65px">TOTAL</th>
+            <th style="padding:.6rem .6rem;text-align:center;width:115px;white-space:nowrap">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-historial">
+          <tr><td colspan="13" style="text-align:center;padding:2rem;color:var(--txm)">Sin costeos guardados aun.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="modal-hist" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;overflow:auto;padding:2rem">
+  <div style="background:var(--sur);border-radius:var(--r4);max-width:800px;margin:0 auto;padding:1.5rem;position:relative">
+    <button onclick="document.getElementById('modal-hist').style.display='none'"
+      style="position:absolute;top:.75rem;right:.75rem;background:transparent;border:none;font-size:1.4rem;cursor:pointer;color:var(--txm)">&#10005;</button>
+    <div id="modal-hist-content"></div>
+  </div>
+</div>
+
+<div id="fab-guardar" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:400;display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">
+  <div id="guardar-form" style="display:none;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r4);padding:1rem;box-shadow:var(--sh2);width:280px">
+    <p style="font-weight:700;margin-bottom:.5rem">&#128190; Guardar costeo</p>
+    <input type="text" id="in-desc-guardar" placeholder="Descripcion del costeo"
+      style="width:100%;box-sizing:border-box;padding:.4rem .6rem;border:1px solid var(--bor);border-radius:var(--r2);background:var(--sur2);color:var(--tx);margin-bottom:.5rem">
+    <div style="display:flex;gap:.5rem;justify-content:flex-end">
+      <button class="btn btn-sm" onclick="document.getElementById('guardar-form').style.display='none'">Cancelar</button>
+      <button class="btn btn-pri btn-sm" onclick="hGuardar()">Guardar</button>
+    </div>
+  </div>
+  <button class="btn btn-suc" onclick="toggleFab()"
+    style="border-radius:999px;padding:.6rem 1.2rem;box-shadow:0 4px 12px rgba(25,135,84,.4)">
+    &#128190; Guardar costeo
+  </button>
+</div>
+
+<script>
+var HK="sim_v73";
+function hGet(){try{return JSON.parse(localStorage.getItem(HK))||[];}catch(e){return[];}}
+function hSet(a){localStorage.setItem(HK,JSON.stringify(a));hBadge();if(typeof hEscribirJSON==="function"&&typeof _fHandle!=="undefined"&&_fHandle){hEscribirJSON(a);}}
+function hBadge(){var n=hGet().length,b=document.getElementById("badge-historial");if(b){b.textContent=n;b.style.display=n?"inline":"none";}}
+function abrirHistorial(btn){document.querySelectorAll(".tab-pane").forEach(function(p){p.classList.remove("active");});document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.remove("active");});var p=document.getElementById("tab-historial");if(p)p.classList.add("active");if(btn)btn.classList.add("active");renderHistorial();}
+function toggleFab(){var f=document.getElementById("guardar-form");if(!f)return;var vis=f.style.display==="block";f.style.display=vis?"none":"block";if(!vis){var o=document.getElementById("in-orden"),d=document.getElementById("in-desc-guardar");if(d)d.value=(o&&o.value)?"Orden "+o.value:"";if(d)d.focus();}}
+function hGuardar(){
+function gv(id){var e=document.getElementById(id);return e?parseFloat(e.value)||0:0;}
+function gt(id){var e=document.getElementById(id);return e?e.textContent||"0":"0";}
+var snap={id:Date.now(),fecha:new Date().toLocaleDateString("es-CL"),
+desc:(document.getElementById("in-desc-guardar")||{value:""}).value||"Sin descripcion",
+orden:(document.getElementById("in-orden")||{value:""}).value||"",
+centro:typeof centroActual!=="undefined"?centroActual:"",
+personas:gv("in-personas"),horas:gv("in-horas"),consumo:(function(){var v=(document.getElementById("in-consumo")||{value:"0"}).value||"0";return parseFloat(v.replace(/\./g,"").replace(",","."))||0;})(),alta:(function(){var v=(document.getElementById("in-alta")||{value:"0"}).value||"0";return parseFloat(v.replace(/\./g,"").replace(",","."))||0;})(),kgh:(document.getElementById("in-kgh")||{value:""}).value||"",iqf:(document.getElementById("in-iqf")||{value:""}).value||"",
+hh:(document.getElementById("in-hh")||{value:""}).value||"",tc:gv("in-tc"),
+psp:(function(){var s=gt("kpi-psp")||"0";return parseFloat(s.indexOf(",")>-1?s.replace(/\./g,"").replace(",","."):s)||0;})(),ope:(function(){var s=gt("kpi-ope")||"0";return parseFloat(s.indexOf(",")>-1?s.replace(/\./g,"").replace(",","."):s)||0;})(),mat:(function(){var s=gt("kpi-mat")||"0";return parseFloat(s.indexOf(",")>-1?s.replace(/\./g,"").replace(",","."):s)||0;})(),ct:(function(){var s=gt("kpi-ct")||"0";return parseFloat(s.indexOf(",")>-1?s.replace(/\./g,"").replace(",","."):s)||0;})(),
+cif:(function(){if(typeof cals==="undefined"||!cals.length)return 0;var sk=0,sc=0;cals.forEach(function(x){if(x.kg>0){sk+=x.kg;sc+=x.kg*(x.cif||0);}});return sk>0?sc/sk:0;})(),cals:(function(){
+  if(typeof cals==="undefined")return[];
+  // cals[i].pspKg, opeKg, matKg, ctKg ya fueron calculados y guardados en calcProduccion()
+  // Solo hacer deep copy y normalizar cif
+  var sc=JSON.parse(JSON.stringify(cals));
+  sc.forEach(function(c){
+    // Normalizar cif
+    c.cif=typeof c.cif==="number"?c.cif:parseFloat(String(c.cif||0).replace(",","."))||0;
+    // Si pspKg no fue guardado aún (costeos viejos), recalcular
+    if(c.pspKg==null||c.pspKg===undefined){
+      var _kpiPsp=(document.getElementById("kpi-psp")||{textContent:"0"}).textContent;
+      var pspV=(function(s){return parseFloat(s.indexOf(",")>-1?s.replace(/\./g,"").replace(",","."):s)||0;})(_kpiPsp);
+      var conV=(function(){var rv=(document.getElementById("in-consumo")||{value:"1"}).value||"1";return parseFloat(rv.replace(/\./g,"").replace(",","."))||1;})();
+      var vxk=pspV*conV;
+      var tEqK=0; sc.forEach(function(x){tEqK+=x.eq*x.kg;});
+      var eqk=c.eq*c.kg;
+      var div=tEqK>0?eqk/tEqK:0;
+      c.pspKg=c.kg>0?(div*vxk)/c.kg:0;
+    }
+    if(c.opeKg==null||c.opeKg===undefined){
+      var _o=(document.getElementById("kpi-ope")||{textContent:"0"}).textContent;
+      c.opeKg=parseFloat(_o.indexOf(",")>-1?_o.replace(/\./g,"").replace(",","."):_o)||0;
+    }
+    if(c.matKg==null||c.matKg===undefined){
+      var _m=(document.getElementById("kpi-mat")||{textContent:"0"}).textContent;
+      c.matKg=parseFloat(_m.indexOf(",")>-1?_m.replace(/\./g,"").replace(",","."):_m)||0;
+    }
+    c.ctKg=c.kg>0?c.pspKg+c.cif+c.opeKg+c.matKg:0;
+  });
+  return sc;
+})
+(),
+psps:typeof psps!=="undefined"?JSON.parse(JSON.stringify(psps)):[],
+empaques:typeof empaques!=="undefined"?JSON.parse(JSON.stringify(empaques)):[],
+tar:typeof tarifasSeleccionadas!=="undefined"?JSON.parse(JSON.stringify(tarifasSeleccionadas)):{}
+};
+var a=hGet();a.unshift(snap);hSet(a);
+document.getElementById("guardar-form").style.display="none";
+if(typeof showToast==="function")showToast("Costeo guardado","suc");
+}
+function renderHistorial(){
+var arr=hGet(),txt=((document.getElementById("filt-hist-texto")||{}).value||"").toLowerCase(),cf=(document.getElementById("filt-hist-centro")||{}).value||"";
+var sel=document.getElementById("filt-hist-centro");
+if(sel){var prev=sel.value;sel.innerHTML="<option value=''>Todos los centros</option>";var cs=[];arr.forEach(function(c){if(c.centro&&cs.indexOf(c.centro)<0)cs.push(c.centro);});cs.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;if(c===prev)o.selected=true;sel.appendChild(o);});}
+var fil=arr.filter(function(c){return(!txt||[c.orden,c.centro,c.desc].some(function(x){return(x||"").toLowerCase().indexOf(txt)>=0;}))&&(!cf||c.centro===cf);});
+var lbl=document.getElementById("lbl-total-costeos");if(lbl)lbl.textContent=arr.length+" costeo"+(arr.length!==1?"s":"")+(fil.length!==arr.length?" ("+fil.length+" visibles)":"");
+var tb=document.getElementById("tbody-historial");if(!tb)return;
+if(!fil.length){tb.innerHTML="<tr><td colspan='11' style='text-align:center;padding:2rem;color:var(--txm)'>"+(arr.length?"Sin resultados.":"Sin costeos guardados aun.")+"</td></tr>";return;}
+var rows="";
+fil.forEach(function(c){
+var _cif=(function(){if(c.cals&&c.cals.length){var sk=0,sc=0;c.cals.forEach(function(x){if(x.kg>0){sk+=x.kg;sc+=x.kg*(x.cif||0);}});if(sk>0)return sc/sk;}return typeof c.cif==="number"?c.cif:parseFloat(String(c.cif||0).replace(",","."))||0;})();
+rows+="<tr style='border-bottom:1px solid var(--div)'>"
++"<td style='padding:.4rem .6rem;text-align:center;width:36px'><input type='checkbox' class='h-sel' value='"+c.id+"' style='width:15px;height:15px;cursor:pointer'></td>"
++"<td style='padding:.5rem .6rem;white-space:nowrap;color:var(--txm);font-size:.78rem;width:148px'>"+c.fecha+"</td>"
++"<td style='padding:.5rem .6rem;font-weight:600;width:55px'>"+(c.orden||"&mdash;")+"</td>"
++"<td style='padding:.5rem .6rem;width:55px'>"+(c.centro||"&mdash;")+"</td>"
++"<td style='padding:.5rem .6rem;width:140px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+c.desc+"</td>"
++"<td style='padding:.5rem .6rem;text-align:right;font-family:monospace;width:72px'>"+Number(c.consumo||0).toLocaleString("es-CL")+"</td>"
++"<td style='padding:.5rem .6rem;text-align:right;font-family:monospace;width:62px'>"+Number(c.alta||0).toLocaleString("es-CL")+"</td>"
++"<td style='padding:.5rem .6rem;text-align:right;font-weight:600;width:62px'>"+Number(typeof c.psp==="number"?c.psp:parseFloat(String(c.psp||0).replace(",","."))||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td>"
++"<td style='padding:.5rem .6rem;text-align:right;width:55px'>"+Number(_cif).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td>"
++"<td style='padding:.5rem .6rem;text-align:right;font-weight:600;width:55px'>"+Number(typeof c.ope==="number"?c.ope:parseFloat(String(c.ope||0).replace(",","."))||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td>"
++"<td style='padding:.5rem .6rem;text-align:right;font-weight:600;width:55px'>"+Number(typeof c.mat==="number"?c.mat:parseFloat(String(c.mat||0).replace(",","."))||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td>"
++"<td style='padding:.5rem .6rem;text-align:right;font-weight:700;width:65px'>"+Number(typeof c.ct==="number"?c.ct:parseFloat(String(c.ct||0).replace(",","."))||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td>"
++"<td style='padding:.5rem .8rem;text-align:center;white-space:nowrap'>"
++"<button class='btn btn-sm' onclick='hDetalle("+c.id+")'>Ver</button> "
++"<button class='btn btn-sm btn-pri' onclick='hCargar("+c.id+")'>Cargar</button> "
++"<button class='btn-del' onclick='hEliminar("+c.id+")'>x</button>"
++"</td></tr>";
+});
+tb.innerHTML=rows;
+}
+function hDetalle(id){
+var arr=hGet(),c=null;for(var i=0;i<arr.length;i++){if(arr[i].id===id){c=arr[i];break;}}if(!c)return;
+var cr="";(c.cals||[]).forEach(function(cal){if(cal.kg>0){var calPsp=cal.pspKg!=null?cal.pspKg:0;var calOpe=cal.opeKg!=null?cal.opeKg:(typeof c.ope==="number"?c.ope:parseFloat(String(c.ope||0).replace(",","."))||0);var calMat=cal.matKg!=null?cal.matKg:(typeof c.mat==="number"?c.mat:parseFloat(String(c.mat||0).replace(",","."))||0);var calCif=typeof cal.cif==="number"?cal.cif:parseFloat(String(cal.cif||0).replace(",","."))||0;var calTot=cal.ctKg!=null?cal.ctKg:calPsp+(cal.cif||0)+calOpe+calMat;cr+="<tr><td style='padding:.4rem'>"+cal.n+"</td><td style='padding:.4rem;text-align:right'>"+Number(cal.kg).toLocaleString("es-CL")+"</td><td style='padding:.4rem;text-align:right'>"+cal.eq+"</td><td style='padding:.4rem;text-align:right'>"+Number(calPsp).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td><td style='padding:.4rem;text-align:right;color:var(--war)'>"+Number(cal.cif||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td><td style='padding:.4rem;text-align:right'>"+Number(calOpe).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td><td style='padding:.4rem;text-align:right'>"+Number(calMat).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td><td style='padding:.4rem;text-align:right;font-weight:700'>"+Number(calTot).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td></tr>";}});
+var pr="";(c.psps||[]).forEach(function(p){if(p.kg>0){pr+="<tr><td style='padding:.3rem'>"+(p.code||"&mdash;")+"</td><td style='padding:.3rem'>"+(p.desc||"&mdash;")+"</td><td style='padding:.3rem;text-align:right'>"+Number(p.kg).toLocaleString("es-CL")+"</td><td style='padding:.3rem;text-align:right'>"+Number(p.usd).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</td><td style='padding:.3rem;text-align:right;font-weight:600'>"+(p.kg*p.usd).toFixed(2)+"</td></tr>";}});
+var fg=[["Centro",c.centro||"&mdash;"],["Orden",c.orden||"&mdash;"],["Personas",c.personas],["Horas",c.horas],["Consumo",Number(c.consumo||0).toLocaleString("es-CL")],["Alta",Number(c.alta||0).toLocaleString("es-CL")],["T.C.",c.tc],["HH",c.hh]].map(function(x){return "<div style='background:var(--sur2);border-radius:var(--r3);padding:.5rem'><div style='font-size:.7rem;color:var(--txm)'>"+x[0]+"</div><div style='font-weight:700'>"+(x[1]||"&mdash;")+"</div></div>";}).join("");
+var h="<h3 style='font-size:1.1rem;font-weight:700;margin-bottom:1rem'>"+c.desc+" <span style='color:var(--txm);font-size:.8rem'>"+c.fecha+"</span></h3>"
++"<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem;margin-bottom:1rem'>"+fg+"</div>"
++"<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem'>"
++"<div style='background:var(--psphl);border-radius:var(--r3);padding:.6rem;text-align:center'><div style='font-size:.7rem;color:var(--psp)'>PSP</div><div style='font-size:1.2rem;font-weight:800;color:var(--psp)'>"+Number(typeof c.psp==="number"?c.psp:parseFloat(String(c.psp||0).replace(",","."))||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</div></div>"
++"<div style='background:var(--prihl);border-radius:var(--r3);padding:.6rem;text-align:center'><div style='font-size:.7rem;color:var(--pri)'>OPE</div><div style='font-size:1.2rem;font-weight:800;color:var(--pri)'>"+Number(typeof c.ope==="number"?c.ope:parseFloat(String(c.ope||0).replace(",","."))||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</div></div>"
++"<div style='background:var(--suchl);border-radius:var(--r3);padding:.6rem;text-align:center'><div style='font-size:.7rem;color:var(--suc)'>MAT</div><div style='font-size:1.2rem;font-weight:800;color:var(--suc)'>"+Number(typeof c.mat==="number"?c.mat:parseFloat(String(c.mat||0).replace(",","."))||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</div></div>"
++"<div style='border:2px solid var(--pri);border-radius:var(--r3);padding:.6rem;text-align:center'><div style='font-size:.7rem;color:var(--txm)'>TOTAL</div><div style='font-size:1.2rem;font-weight:800'>"+Number(typeof c.ct==="number"?c.ct:parseFloat(String(c.ct||0).replace(",","."))||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+"</div></div>"
++"</div>"
++(cr?"<p style='font-weight:700;font-size:.85rem;margin-bottom:.3rem'>Calidades</p><div style='overflow:auto;margin-bottom:1rem'><table style='font-size:.8rem'><thead style='background:var(--sur2)'><tr><th>Calidad</th><th>Kg</th><th>Eq.</th><th>PSP/KG</th><th style='color:var(--war)'>CIF</th><th>OPE/KG</th><th>MAT/KG</th><th>COSTO TOTAL</th></tr></thead><tbody>"+cr+"</tbody></table></div>":"")
++(pr?"<p style='font-weight:700;font-size:.85rem;margin-bottom:.3rem'>PSP Utilizados</p><div style='overflow:auto'><table style='font-size:.8rem'><thead style='background:var(--sur2)'><tr><th>Codigo</th><th>Descripcion</th><th>Kg</th><th>USD/kg</th><th>Sub-Total</th></tr></thead><tbody>"+pr+"</tbody></table></div>":"")
++"<div style='display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem'>"
++"<button class='btn btn-pri' onclick='hCargar("+c.id+");document.getElementById(\"modal-hist\").style.display=\"none\"'>Cargar</button>"
++"<button class='btn' onclick='document.getElementById(\"modal-hist\").style.display=\"none\"'>Cerrar</button>"
++"</div>";
+document.getElementById("modal-hist-content").innerHTML=h;
+document.getElementById("modal-hist").style.display="block";
+}
+function hCargar(id){
+var arr=hGet(),c=null;for(var i=0;i<arr.length;i++){if(arr[i].id===id){c=arr[i];break;}}if(!c)return;
+if(!confirm("Cargar este costeo en el simulador?"))return;
+function sv(eid,val){var e=document.getElementById(eid);if(e)e.value=val;}
+sv("in-orden",c.orden||"");sv("in-personas",c.personas||0);sv("in-horas",c.horas||0);sv("in-tc",c.tc||950);sv("in-kgh",c.kgh||"");sv("in-iqf",c.iqf||"");
+if(typeof cals!=="undefined"&&c.cals){cals.length=0;c.cals.forEach(function(x){cals.push(x);});}
+if(typeof psps!=="undefined"&&c.psps){psps.length=0;c.psps.forEach(function(x){psps.push(x);});}
+if(typeof empaques!=="undefined"&&c.empaques){empaques.length=0;c.empaques.forEach(function(x){empaques.push(x);});}
+if(typeof tarifasSeleccionadas!=="undefined"&&c.tar){Object.keys(tarifasSeleccionadas).forEach(function(k){delete tarifasSeleccionadas[k];});Object.assign(tarifasSeleccionadas,c.tar);}
+if(typeof renderEmpPsp==="function")renderEmpPsp();
+if(typeof renderDistribucionPorcentaje==="function")renderDistribucionPorcentaje();
+if(typeof calcProduccion==="function")calcProduccion();
+if(typeof renderTarifaSelectorGrid==="function")renderTarifaSelectorGrid();
+var btn=document.querySelector(".tab-btn");if(typeof switchTab==="function"&&btn)switchTab("costeo",btn);
+if(typeof showToast==="function")showToast("Costeo cargado","suc");
+}
+function hEliminar(id){if(!confirm("Eliminar?"))return;hSet(hGet().filter(function(x){return x.id!==id;}));renderHistorial();if(typeof showToast==="function")showToast("Eliminado","");}
+function confirmarLimpiarHistorial(){var sel=[];document.querySelectorAll(".h-sel:checked").forEach(function(c){sel.push(+c.value);});if(sel.length>0){if(!confirm("¿Eliminar los "+sel.length+" costeo(s) seleccionado(s)?"))return;hSet(hGet().filter(function(x){return sel.indexOf(x.id)<0;}));renderHistorial();if(typeof showToast==="function")showToast(sel.length+" costeo(s) eliminado(s)","");return;}var n=hGet().length;if(!n){if(typeof showToast==="function")showToast("Historial vacío","");return;}if(!confirm("¿Eliminar TODOS los "+n+" costeos del historial?"))return;hSet([]);renderHistorial();if(typeof showToast==="function")showToast("Historial limpiado","");}
+function exportarHistorialCSV(){
+var arr=hGet();if(!arr.length){if(typeof showToast==="function")showToast("Historial vacio","");return;}
+var cols=["Fecha","Orden","Centro","Descripcion","Consumo","Alta","PSP","OPE","MAT","TOTAL","TC","HH"];
+var rows=arr.map(function(c){return[c.fecha,c.orden,c.centro,c.desc,c.consumo,c.alta,c.psp,c.ope,c.mat,c.ct,c.tc,c.hh].join(";");});
+var nl=String.fromCharCode(10);
+var csv="\uFEFF"+cols.join(";")+nl+rows.join(nl);
+var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="Historial_"+new Date().toISOString().slice(0,10)+".csv";a.click();
+}
+function exportarHistorialExcel(){
+if(typeof XLSX==="undefined"){if(typeof showToast==="function")showToast("XLSX no disponible","err");return;}
+var arr=hGet();if(!arr.length){if(typeof showToast==="function")showToast("Historial vacio","");return;}
+var wb2=XLSX.utils.book_new();
+var res=arr.map(function(c){return{"Fecha":c.fecha,"Orden":c.orden,"Centro":c.centro,"Descripcion":c.desc,"Consumo":+c.consumo||0,"Alta":+c.alta||0,"TC":+c.tc||0,"HH":+c.hh||0,"PSP":+c.psp||0,"OPE":+c.ope||0,"MAT":+c.mat||0,"TOTAL":+c.ct||0};});
+XLSX.utils.book_append_sheet(wb2,XLSX.utils.json_to_sheet(res),"Resumen");
+var det=[];arr.forEach(function(c){(c.cals||[]).forEach(function(cal){if(cal.kg>0)det.push({"Fecha":c.fecha,"Orden":c.orden,"Calidad":cal.n,"Kg":cal.kg,"Eq":cal.eq,"PSP":+c.psp||0,"CIF":cal.cif||0,"OPE":+c.ope||0,"MAT":+c.mat||0,"Total":(+c.psp||0)+(cal.cif||0)+(+c.ope||0)+(+c.mat||0)});});});
+if(det.length)XLSX.utils.book_append_sheet(wb2,XLSX.utils.json_to_sheet(det),"Calidades");
+XLSX.writeFile(wb2,"Historial_"+new Date().toISOString().slice(0,10)+".xlsx");
+if(typeof showToast==="function")showToast("Excel exportado","suc");
+}
+hBadge();
+
+function hToggleAll(chk){
+  document.querySelectorAll('.h-sel').forEach(function(c){c.checked=chk.checked;});
+}
+
+function hDescargarSeleccion(){
+  var sel=[];
+  document.querySelectorAll('.h-sel:checked').forEach(function(c){sel.push(+c.value);});
+  if(!sel.length){alert('Selecciona al menos un costeo.');return;}
+  var arr=hGet();
+  var NL='\n'; var sep=';';
+  var f2=function(n){return Number(n).toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  var fN=function(n){return Number(n).toLocaleString('es-CL');};
+  var csv=''; var primero=true;
+
+  sel.forEach(function(id){
+    var c=null;for(var i=0;i<arr.length;i++){if(arr[i].id===id){c=arr[i];break;}}
+    if(!c)return;
+    var pspV=typeof c.psp==='number'?c.psp:parseFloat(String(c.psp||0).replace(',','.'))||0;
+    var opeV=typeof c.ope==='number'?c.ope:parseFloat(String(c.ope||0).replace(',','.'))||0;
+    var matV=typeof c.mat==='number'?c.mat:parseFloat(String(c.mat||0).replace(',','.'))||0;
+    var ctV =typeof c.ct ==='number'?c.ct :parseFloat(String(c.ct ||0).replace(',','.'))||0;
+
+    if(primero){
+      csv+='FECHA'+sep+'DESCRIPCION'+sep+'ORDEN'+sep+'CENTRO'+sep+'CONSUMO'+sep+'ALTA'+sep+'PSP'+sep+'OPE'+sep+'MAT'+sep+'TOTAL'+NL;
+      csv+=''+sep+''+sep+'"'+(c.orden||'')+'\"'+sep+'"'+(c.centro||'')+'\"'+sep
+          +fN(c.consumo||0)+sep+fN(c.alta||0)+sep
+          +f2(pspV)+sep+f2(opeV)+sep+f2(matV)+sep+f2(ctV)+NL;
+      primero=false;
+    } else {
+      csv+=NL;
+      csv+=''+sep+''+sep+'ORDEN'+sep+'CENTRO'+sep+'CONSUMO'+sep+'ALTA'+sep+'PSP'+sep+'OPE'+sep+'MAT'+sep+'TOTAL'+NL;
+      csv+='"'+c.fecha+'\"'+sep+'"'+(c.desc||'')+'\"'+sep+'"'+(c.orden||'')+'\"'+sep+'"'+(c.centro||'')+'\"'+sep
+          +fN(c.consumo||0)+sep+fN(c.alta||0)+sep
+          +f2(pspV)+sep+f2(opeV)+sep+f2(matV)+sep+f2(ctV)+NL;
+    }
+    csv+=NL;
+    csv+='"'+c.fecha+'\"'+sep+'"'+(c.desc||'')+'\"'+sep+'CALIDAD'+sep+'KG'+sep+'EQ'+sep+'PSP/KG'+sep+'CIF'+sep+'OPE/KG'+sep+'MAT/KG'+sep+'COSTO TOTAL'+NL;
+    (c.cals||[]).forEach(function(cal){
+      if(!cal.kg||cal.kg<=0)return;
+      var calPsp=cal.pspKg!=null?cal.pspKg:0;
+      var calOpe=cal.opeKg!=null?cal.opeKg:opeV;
+      var calMat=cal.matKg!=null?cal.matKg:matV;
+      var calCif=typeof cal.cif==="number"?cal.cif:parseFloat(String(cal.cif||0).replace(",","."))||0;
+      var calTot=cal.ctKg!=null?cal.ctKg:calPsp+calCif+calOpe+calMat;
+      csv+=''+sep+''+sep+'"'+cal.n+'\"'+sep+f2(cal.kg)+sep+cal.eq+sep+f2(calPsp)+sep+f2(calCif)+sep+f2(calOpe)+sep+f2(calMat)+sep+f2(calTot)+NL;
+    });
+  });
+
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='costeos_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+
+function repararHistorial(){
+  var arr=hGet();
+  var reparados=0;
+  arr.forEach(function(c){
+    var psp=typeof c.psp==='number'?c.psp:parseFloat(String(c.psp||0).replace(',','.'))||0;
+    var ope=typeof c.ope==='number'?c.ope:parseFloat(String(c.ope||0).replace(',','.'))||0;
+    var mat=typeof c.mat==='number'?c.mat:parseFloat(String(c.mat||0).replace(',','.'))||0;
+    var ct=typeof c.ct==='number'?c.ct:parseFloat(String(c.ct||0).replace(',','.'))||0;
+    // Detectar si psp está ×100: psp>10 y calidades tienen pspKg razonable (<psp/10)
+    var needsFix=false;
+    if(psp>10){
+      var hasCals=c.cals&&c.cals.length>0;
+      if(hasCals){
+        var avgCalPsp=0,cnt=0;
+        c.cals.forEach(function(x){if(x.pspKg>0){avgCalPsp+=x.pspKg;cnt++;}});
+        if(cnt>0){avgCalPsp/=cnt; if(avgCalPsp<psp/5) needsFix=true;}
+      } else {needsFix=true;}
+    }
+    if(needsFix){
+      c.psp=Math.round(psp/100*10000)/10000;
+      c.ope=Math.round(ope/100*10000)/10000;
+      c.mat=Math.round(mat/100*10000)/10000;
+      c.ct=Math.round(ct/100*10000)/10000;
+      if(c.cals) c.cals.forEach(function(cal){
+        if(cal.opeKg!=null) cal.opeKg=Math.round(cal.opeKg/100*10000)/10000;
+        if(cal.matKg!=null) cal.matKg=Math.round(cal.matKg/100*10000)/10000;
+        if(cal.ctKg!=null) cal.ctKg=cal.pspKg+(cal.cif||0)+cal.opeKg+cal.matKg;
+      });
+      reparados++;
+    }
+  });
+  if(reparados>0){hSet(arr);showToast('🔧 '+reparados+' costeo(s) reparado(s) automáticamente.');}
+}
+
+
+// ══════════════════════════════════════════════
+// HISTORIAL COMPARTIDO — File System Access API
+// ══════════════════════════════════════════════
+var _dirHandle = null;
+var _fHandle   = null;
+var _FNAME     = 'historial_simulador.json';
+
+async function hConectarCarpeta() {
+  try {
+    _dirHandle = await window.showDirectoryPicker({mode:'readwrite'});
+    _fHandle   = await _dirHandle.getFileHandle(_FNAME, {create:true});
+    var file   = await _fHandle.getFile();
+    var text   = await file.text();
+    var remoto = [];
+    try { remoto = JSON.parse(text) || []; } catch(e) { remoto = []; }
+    var local  = hGetLocal();
+    if(remoto.length === 0 && local.length > 0) {
+      if(confirm('¿Migrar tu historial local (' + local.length + ' costeos) a la carpeta compartida?')) {
+        await hEscribirJSON(local);
+        remoto = local;
+      }
+    } else if(remoto.length > 0) {
+      localStorage.setItem(HK, JSON.stringify(remoto));
+    }
+    hBadge(); renderHistorial(); hActualizarEstado();
+    if(typeof showToast==='function') showToast('✅ Carpeta conectada — historial compartido activo','suc');
+  } catch(e) {
+    if(e.name !== 'AbortError') alert('Error al conectar carpeta: ' + e.message);
+  }
+}
+
+async function hEscribirJSON(datos) {
+  if(!_fHandle) return;
+  try {
+    var w = await _fHandle.createWritable();
+    await w.write(JSON.stringify(datos, null, 2));
+    await w.close();
+  } catch(e) { console.warn('Error escribiendo JSON compartido:', e); }
+}
+
+async function hSincronizarDesdeJSON() {
+  if(!_fHandle) { alert('Primero conecta la carpeta compartida.'); return; }
+  try {
+    var file = await _fHandle.getFile();
+    var text = await file.text();
+    var remoto = JSON.parse(text) || [];
+    localStorage.setItem(HK, JSON.stringify(remoto));
+    hBadge(); renderHistorial();
+    if(typeof showToast==='function') showToast('🔄 Historial sincronizado ('+remoto.length+' costeos)','suc');
+  } catch(e) { alert('Error al sincronizar: ' + e.message); }
+}
+
+function hGetLocal() {
+  try { return JSON.parse(localStorage.getItem(HK)) || []; } catch(e) { return []; }
+}
+
+function hActualizarEstado() {
+  var el = document.getElementById('hist-estado');
+  if(!el) return;
+  if(_fHandle) {
+    el.innerHTML = '<span style="color:#198754;font-weight:600;font-size:.82rem">🟢 Historial compartido activo — '+_FNAME+'</span>'
+      +' <button class="btn btn-sm" onclick="hSincronizarDesdeJSON()" style="padding:2px 8px;font-size:.75rem;margin-left:8px">🔄 Sync</button>';
+  } else {
+    el.innerHTML = '<span style="color:#6c757d;font-size:.82rem">🔵 Historial local (solo tu PC)</span>'
+      +' <button class="btn btn-sm" onclick="hConectarCarpeta()" style="padding:2px 8px;font-size:.75rem;margin-left:8px;background:var(--pri);color:#fff">📂 Conectar carpeta compartida</button>';
+  }
+}
+
+</script>
+</body>
+</html>
+
+</body>
+</html>
